@@ -238,13 +238,10 @@ INSTRUKSI REKONSTRUKSI & ANIMASI:
               {view === "portal" && (
                 <>
                   {/* Card 1: Bulk Kode Generator */}
-                  <div
-                    onClick={() => setView("bulk")}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-[#171109] to-[#0f1118] border border-amber-500/30 hover:border-amber-400/60 shadow-lg shadow-amber-950/20 cursor-pointer transition-all hover:scale-[1.01] group"
-                  >
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-[#171109] to-[#0f1118] border border-amber-500/30 shadow-lg shadow-amber-950/20 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3.5">
-                        <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 group-hover:scale-110 transition-transform">
+                        <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400">
                           <FileCode2 className="w-5 h-5" />
                         </div>
                         <div>
@@ -257,22 +254,36 @@ INSTRUKSI REKONSTRUKSI & ANIMASI:
                             </span>
                           </div>
                           <p className="text-[11px] text-zinc-400 mt-1">
-                            Generate banyak kode Canvas & SVG otomatis sekaligus untuk ternak stok video.
+                            Generate banyak kode Canvas & SVG otomatis sekaligus via Gemini Canvas App resmi Lonceng Stock.
                           </p>
                         </div>
                       </div>
-                      <ExternalLink className="w-4 h-4 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0 mt-1" />
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                      <a
+                        href="https://share.gemini.google/zh62dd7n85bM"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-orange-950/40 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <span>Buka Gemini Canvas App</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-black" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setView("bulk")}
+                        className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <span>Prompt Internal</span>
+                      </button>
                     </div>
                   </div>
 
                   {/* Card 2: Image To Code */}
-                  <div
-                    onClick={() => setView("image_to_code")}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-[#08151f] to-[#0f1118] border border-cyan-500/30 hover:border-cyan-400/60 shadow-lg shadow-cyan-950/20 cursor-pointer transition-all hover:scale-[1.01] group"
-                  >
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-[#08151f] to-[#0f1118] border border-cyan-500/30 shadow-lg shadow-cyan-950/20 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3.5">
-                        <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/25 text-cyan-400 group-hover:scale-110 transition-transform">
+                        <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/25 text-cyan-400">
                           <ImageIcon className="w-5 h-5" />
                         </div>
                         <div>
@@ -285,11 +296,28 @@ INSTRUKSI REKONSTRUKSI & ANIMASI:
                             </span>
                           </div>
                           <p className="text-[11px] text-zinc-400 mt-1">
-                            Konversi gambar visual ilustrasi/vektor menjadi kode Canvas bergerak.
+                            Konversi gambar visual ilustrasi/vektor menjadi kode Canvas bergerak via Gemini Vision App.
                           </p>
                         </div>
                       </div>
-                      <ExternalLink className="w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0 mt-1" />
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                      <a
+                        href="https://share.gemini.google/h4kMrnYBNjb1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-950/40 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <span>Buka Gemini Image to Code</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-black" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setView("image_to_code")}
+                        className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <span>Prompt Internal</span>
+                      </button>
                     </div>
                   </div>
 
