@@ -33,7 +33,7 @@ import { AssetUploadPanel } from "./components/AssetUploadPanel";
 import { CoverPanel } from "./components/CoverPanel";
 import { LogsPanel } from "./components/LogsPanel";
 import { BulkRenderPanel } from "./components/BulkRenderPanel";
-import { PromptModal } from "./components/PromptModal";
+import { SvgPromptModal } from "./components/SvgPromptModal";
 import { CanvasPromptModal } from "./components/CanvasPromptModal";
 import { AiGeneratorsMenu } from "./components/AiGeneratorsMenu";
 import { PreflightPanel } from "./components/PreflightPanel";
@@ -618,13 +618,12 @@ export default function App() {
           onToast={showToast}
         />
       ) : (
-        <PromptModal
+        <SvgPromptModal
           open={promptOpen}
           onClose={closePrompt}
-          mode={engineMode}
           config={config}
-          assetKeys={[]}
-          onCopied={(ok) => showToast(ok ? "success" : "warning", ok ? "Prompt disalin! Tempel di chat AI." : "Gagal menyalin otomatis, salin manual dari kotak prompt.")}
+          onApplyConfig={applyConfigFromPrompt}
+          onToast={showToast}
         />
       )}
 
