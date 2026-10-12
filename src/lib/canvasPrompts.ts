@@ -89,7 +89,7 @@ Aturan konsep:
 - Semua konsep harus berbeda.
 - Visual harus premium, modern, komersial, dan layak untuk Shutterstock, Adobe Stock, Pond5, Storyblocks, dan Vecteezy.
 - KOMPOSISI PRESISI & SAFE MARGIN: Objek utama WAJIB berpusat persis di tengah kanvas (center-aligned: width / 2, height / 2). Berikan safe margin minimal 15% dari tepi layar (ukuran objek maksimal 70% dari minSide) agar objek TIDAK PERNAH terpotong atau keluar dari kanvas saat bergerak atau berputar.
-- ANTI-GENERIK & ANTI-SPINNER (PENTING): JANGAN buat desain klise pemula berupa lingkaran berputar konsentris / spinning loading HUD rings! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: kubus 3D isometrik, susunan diagram batang bertingkat, chip sirkuit kotak, kartu berlapis, atau bentuk poligon unik).
+- ANTI-GENERIK & ANTI-LINGKARAN ORBIT (PENTING): JANGAN buat desain klise pemula berupa lingkaran berputar konsentris, cincin garis putus-putus (dashed ring), atau orbit titik-titik melingkar di sekeliling objek! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: kubus 3D isometrik, susunan diagram batang bertingkat, chip sirkuit kotak, kartu berlapis, atau bentuk poligon unik). Ornamen pendukung wajib berupa garis lurus/grid/partikel vertikal, BUKAN lingkaran mengitari objek.
 - MOTION DINAMIS: Hindari pergerakan linear yang kaku dan jangan hanya rotasi putar biasa. Gunakan kombinasi easing (seperti sin/cos complex), efek floating/mengambang halus, pergeseran sudut pseudo-3D, unfolding, masking, dan aliran partikel terarah agar terlihat seperti buatan After Effects profesional.
 - Semua konsep harus realistis dibuat menggunakan Canvas API.
 - Jangan gunakan logo, brand, karakter berlisensi, atau asset eksternal.
@@ -176,13 +176,15 @@ ATURAN VISUAL:
    - Wajib hitung titik tengah: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height).
    - Objek utama (hero element) WAJIB berada tepat di tengah layar (centered at cx, cy).
    - SAFE MARGIN (ANTI-TERPOTONG): Ukuran maksimal objek utama (termasuk glow dan saat animasi scale membesar) MAKSIMAL 70% dari minSide (radius <= minSide * 0.35). Wajib beri safe margin minimal 15% dari tepi kanvas agar objek TIDAK PERNAH terpotong atau keluar dari frame saat bergerak, berputar, atau memantul.
-·  ANTI-GENERIK & ANTI-SPINNER (WAJIB DITAATI):
-   - DILARANG KERAS membuat visual klise malas berupa lingkaran berputar konsentris, cincin HUD putar, atau loading ring generik!
+·  ANTI-GENERIK & ANTI-LINGKARAN ORBIT (ATURAN MUTLAK):
+   - DILARANG KERAS menyelipkan elemen lingkaran dalam bentuk apapun, BAIK SEBAGAI OBJEK UTAMA MAUPUN SEBAGAI ORNAMEN DEKORATIF LATAR!
+   - DILARANG membuat: cincin garis putus-putus melingkar (dashed circle ring), orbit melingkar dengan titik-titik putar yang mengitari objek, radar HUD melingkar, atau lingkaran konsentris di sekeliling objek!
+   - Jika butuh ornamen pemanis, WAJIB gunakan: grid garis lurus/matriks kotak, garis diagonal teknis, partikel mengambang vertikal, atau frame sudut poligon/heksagon tajam (BUKAN lingkaran mengitari objek).
    - Objek utama WAJIB memiliki bentuk anatomi konkret sesuai tema:
      * Jika Bisnis / Finansial: Gambar batang diagram bertingkat 3D, koin segi-delapan tebal, grafik tren dinamis, atau brankas modern.
-     * Jika Teknologi / AI / Data: Gambar chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru (BUKAN cuma lingkaran putar).
+     * Jika Teknologi / AI / Data: Gambar chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru.
      * Jika Abstrak / Futuristik: Gambar kubus isometrik 3D yang terbuka, prisma heksagonal melayang, atau pita melengkung (ribbon) dinamis.
-     * Jika Kreatif / Desain: Gambar bingkai berlapis, lembaran kartu floating, atau susunan balok geometris elegan.
+     * Jika Karakter / Seasonal (misal Halloween/Festive): Gambar siluet atau wajah ikonik secara utuh tanpa dibingkai oleh cincin/lingkaran orbit berputar.
    - Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (createLinearGradient), dan efek kedalaman pencahayaan/shadow (shadowBlur).
 ·  Komposisi harus rapi, seimbang, dan objek utama terlihat jelas menjadi fokus utama.
 ·  Hindari teks tertutup objek.

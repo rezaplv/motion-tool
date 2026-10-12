@@ -59,7 +59,7 @@ Setiap konsep wajib berisi:
 Aturan konsep:
 - Semua konsep harus berbeda, modern, komersial, dan layak untuk Shutterstock, Adobe Stock, Pond5, Storyblocks, dan Vecteezy.
 - KOMPOSISI PRESISI & SAFE MARGIN: Objek utama WAJIB berpusat persis di tengah kanvas (center-aligned: width / 2, height / 2). Berikan safe margin minimal 15% dari tepi layar (ukuran objek maksimal 70% dari minSide) agar objek TIDAK PERNAH terpotong atau keluar dari kanvas saat bergerak atau membesar.
-- ANTI-GENERIK VEKTOR & ANTI-SPINNER (PENTING): JANGAN buat desain klise malas berupa lingkaran berputar konsentris / spinning loading rings! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: struktur kubus isometrik, diagram balok bertingkat, chip sirkuit kotak, prisma kristal, atau kurva ilustratif unik). Wajib gunakan palet warna kaya (minimal 4 warna), gradasi (<linearGradient>, <radialGradient>), efek filter glow/shadow, dan kurva dinamis (<path d="... ">).
+- ANTI-GENERIK VEKTOR & ANTI-LINGKARAN ORBIT (PENTING): JANGAN buat desain klise pemula berupa lingkaran berputar konsentris, cincin garis putus-putus (dashed circle ring), atau orbit melingkar yang mengitari objek! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: struktur kubus isometrik, diagram balok bertingkat, chip sirkuit kotak, prisma kristal, atau kurva ilustratif unik). Ornamen pendukung wajib berupa garis lurus/grid/partikel vertikal, BUKAN lingkaran mengitari objek.
 - MOTION DINAMIS BERVARIASI: Jangan hanya animasi rotasi putar biasa! Gunakan translasi sumbu X/Y, animasi skala elastis, efek floating halus, masking clipPath, dan stroke-dashoffset yang membentuk garis ilustrasi secara dinamis.
 - Semua konsep harus realistis dibuat dengan manipulasi string SVG murni via JavaScript.
 - Jangan gunakan logo, brand, karakter berlisensi, atau file eksternal dari internet.
@@ -124,13 +124,15 @@ ATURAN VISUAL VEKTOR:
    - Wajib hitung titik tengah: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height).
    - Objek utama (hero vector element) WAJIB berada tepat di tengah layar (centered at cx, cy).
    - SAFE MARGIN (ANTI-TERPOTONG): Ukuran maksimal objek utama (termasuk glow dan saat scale membesar) MAKSIMAL 70% dari minSide (radius <= minSide * 0.35). Wajib beri safe margin minimal 15% dari tepi kanvas agar objek TIDAK PERNAH terpotong atau keluar dari frame saat bergerak, berputar, atau memantul.
-·  ANTI-GENERIK VEKTOR & ANTI-SPINNER (WAJIB DITAATI):
-   - DILARANG KERAS membuat visual klise malas berupa lingkaran konsentris berputar biasa, cincin HUD putar, atau loading ring generik!
+·  ANTI-GENERIK VEKTOR & ANTI-LINGKARAN ORBIT (ATURAN MUTLAK):
+   - DILARANG KERAS menyelipkan elemen lingkaran dalam bentuk apapun, BAIK SEBAGAI OBJEK UTAMA MAUPUN SEBAGAI ORNAMEN DEKORATIF LATAR!
+   - DILARANG membuat: cincin putus-putus melingkar (dashed circle ring), tag <circle> orbit konsentris, atau titik-titik yang mengitari objek dalam bentuk lingkaran!
+   - Jika butuh ornamen pemanis, WAJIB gunakan: grid garis lurus/wireframe, matriks titik kotak, partikel debu melayang vertikal, atau aksen sudut poligon/heksagon tajam (BUKAN lingkaran mengitari objek).
    - Objek utama WAJIB memiliki bentuk anatomi konkret sesuai tema:
      * Jika Bisnis / Finansial: Buat grafik balok bertingkat 3D, koin segi-delapan tebal, grafik tren dinamis, atau brankas modern dengan tag <path> dan <rect>.
-     * Jika Teknologi / AI / Data: Buat chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru (BUKAN cuma lingkaran putar).
+     * Jika Teknologi / AI / Data: Buat chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru.
      * Jika Abstrak / Futuristik: Buat kubus isometrik 3D, prisma heksagonal melayang, atau pita melengkung (ribbon) dinamis.
-     * Jika Kreatif / Desain: Buat bingkai berlapis, lembaran kartu floating, atau susunan balok geometris elegan.
+     * Jika Karakter / Seasonal (misal Halloween/Festive): Buat siluet atau wajah ikonik secara utuh tanpa dibingkai oleh cincin/lingkaran orbit berputar.
    - Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (<linearGradient>, <radialGradient>), efek pencahayaan/glow (<filter id="glow">), dan kurva dinamis (<path d="...">).
 ·  Komposisi rapi, seimbang, dan objek utama terlihat jelas menjadi fokus utama.
 ·  Jangan gunakan logo, brand, watermark, karakter berlisensi, atau asset eksternal dari internet.
