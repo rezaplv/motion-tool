@@ -453,7 +453,11 @@ export default function App() {
             <Sparkles className="w-3.5 h-3.5" />
             Prompt AI
           </button>
-          <AiGeneratorsMenu />
+          <AiGeneratorsMenu
+            config={config}
+            engineMode={engineMode}
+            onToast={showToast}
+          />
           <button
             type="button"
             onClick={() => setBulkOpen(true)}
