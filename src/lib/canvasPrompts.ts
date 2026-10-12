@@ -89,8 +89,8 @@ Aturan konsep:
 - Semua konsep harus berbeda.
 - Visual harus premium, modern, komersial, dan layak untuk Shutterstock, Adobe Stock, Pond5, Storyblocks, dan Vecteezy.
 - KOMPOSISI PRESISI & SAFE MARGIN: Objek utama WAJIB berpusat persis di tengah kanvas (center-aligned: width / 2, height / 2). Berikan safe margin minimal 15% dari tepi layar (ukuran objek maksimal 70% dari minSide) agar objek TIDAK PERNAH terpotong atau keluar dari kanvas saat bergerak atau berputar.
-- ANTI-GENERIK: Hindari desain tutorial pemula! Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (createLinearGradient), efek pencahayaan/shadow (shadowBlur), dan elemen dekoratif berlapis (partikel melayang, grid, ornamen).
-- MOTION DINAMIS: Hindari pergerakan linear yang kaku. Gunakan easing (seperti sin/cos complex), efek parallax, masking, dan perputaran (rotasi) agar terlihat seperti buatan After Effects profesional.
+- ANTI-GENERIK & ANTI-SPINNER (PENTING): JANGAN buat desain klise pemula berupa lingkaran berputar konsentris / spinning loading HUD rings! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: kubus 3D isometrik, susunan diagram batang bertingkat, chip sirkuit kotak, kartu berlapis, atau bentuk poligon unik).
+- MOTION DINAMIS: Hindari pergerakan linear yang kaku dan jangan hanya rotasi putar biasa. Gunakan kombinasi easing (seperti sin/cos complex), efek floating/mengambang halus, pergeseran sudut pseudo-3D, unfolding, masking, dan aliran partikel terarah agar terlihat seperti buatan After Effects profesional.
 - Semua konsep harus realistis dibuat menggunakan Canvas API.
 - Jangan gunakan logo, brand, karakter berlisensi, atau asset eksternal.
 Setelah memberi 10 konsep, tunggu saya memilih nomor.
@@ -176,17 +176,23 @@ ATURAN VISUAL:
    - Wajib hitung titik tengah: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height).
    - Objek utama (hero element) WAJIB berada tepat di tengah layar (centered at cx, cy).
    - SAFE MARGIN (ANTI-TERPOTONG): Ukuran maksimal objek utama (termasuk glow dan saat animasi scale membesar) MAKSIMAL 70% dari minSide (radius <= minSide * 0.35). Wajib beri safe margin minimal 15% dari tepi kanvas agar objek TIDAK PERNAH terpotong atau keluar dari frame saat bergerak, berputar, atau memantul.
-·  ANTI-GENERIK: Hindari desain tutorial pemula! Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (createLinearGradient), efek pencahayaan/shadow (shadowBlur), dan elemen dekoratif pendukung (partikel melayang, grid teknologis, ornamen).
-·  Komposisi harus rapi, seimbang, dan tidak menumpuk.
-·  Objek utama harus terlihat jelas dan menjadi fokus utama.
+·  ANTI-GENERIK & ANTI-SPINNER (WAJIB DITAATI):
+   - DILARANG KERAS membuat visual klise malas berupa lingkaran berputar konsentris, cincin HUD putar, atau loading ring generik!
+   - Objek utama WAJIB memiliki bentuk anatomi konkret sesuai tema:
+     * Jika Bisnis / Finansial: Gambar batang diagram bertingkat 3D, koin segi-delapan tebal, grafik tren dinamis, atau brankas modern.
+     * Jika Teknologi / AI / Data: Gambar chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru (BUKAN cuma lingkaran putar).
+     * Jika Abstrak / Futuristik: Gambar kubus isometrik 3D yang terbuka, prisma heksagonal melayang, atau pita melengkung (ribbon) dinamis.
+     * Jika Kreatif / Desain: Gambar bingkai berlapis, lembaran kartu floating, atau susunan balok geometris elegan.
+   - Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (createLinearGradient), dan efek kedalaman pencahayaan/shadow (shadowBlur).
+·  Komposisi harus rapi, seimbang, dan objek utama terlihat jelas menjadi fokus utama.
 ·  Hindari teks tertutup objek.
 ·  Jangan gunakan logo, brand, watermark, karakter berlisensi, atau asset eksternal.
 
 ATURAN MOTION:
 ·  Animasi harus smooth, fluid, dan tidak kaku.
-·  MOTION DINAMIS: Hindari pergerakan linear yang membosankan! Gunakan kombinasi easing (seperti Math.sin complex), efek parallax (layer bergerak dengan kecepatan berbeda), masking animasi, dan rotasi. Buat animasinya kaya dan berlapis layaknya After Effects.
+·  MOTION DINAMIS BERVARIASI: JANGAN HANYA MEMUTAR OBJEK (ctx.rotate)! Kombinasikan pergerakan mengambang halus (floating/bobbing vertikal), transformasi pernapasan skala (breathing scale), pergeseran sudut pseudo-3D, dan aliran partikel terarah layaknya animasi After Effects profesional.
 ·  Gunakan easing function yang sesuai (easeIn, easeOut, easeInOut, bounce, elastic).
-·  Gerakan objek harus logis dan sesuai konsep.
+·  Gerakan objek harus logis dan sesuai konsep tema.
 ·  Hindari gerakan yang terlalu cepat, patah-patah, atau membingungkan.
 ·  Transisi antar scene (jika lebih dari 1 scene) harus seamless.
 

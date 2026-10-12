@@ -83,16 +83,16 @@ const DEFAULT_FORM: FormState = {
 };
 
 const RANDOM_IDEAS = [
-  "Tambahkan efek transisi wiping dari kiri ke kanan setiap kali warnanya berubah, dan objeknya harus bentuk piramida 3D.",
-  "Gunakan efek glitch dan chromatic aberration saat objek utama membesar di tengah layar.",
-  "Animasi harus memiliki efek parallax di mana layer latar belakang bergerak lebih lambat daripada objek di depan.",
-  "Setiap elemen harus muncul dengan efek masking dari bawah ke atas secara bergantian (staggered).",
-  "Gunakan efek pseudo-3D rotation dengan cara mengubah skala sumbu X dari 1 ke -1 menggunakan Math.cos(time).",
-  "Latar belakang harus dipenuhi partikel debu melayang yang bergerak halus dan saling terhubung dengan garis jika berdekatan.",
-  "Elemen utama memancarkan gelombang (ripple effect) melingkar yang memudar secara berulang.",
-  "Objek utama tidak pernah diam; selalu mengambang (floating) dengan efek easing Math.sin() yang sangat smooth dan elegan.",
-  "Visualkan efek distorsi gelombang (wave distortion) pada sumbu Y untuk teks atau bentuk utama.",
-  "Saat scene berganti, gunakan efek transisi iris melingkar (lingkaran yang membesar dari tengah)."
+  "Bentuk objek utama berupa kubus isometrik 3D futuristik yang membuka lapisannya satu per satu menampilkan kristal neon bercahaya di dalamnya (JANGAN buat lingkaran berputar biasa).",
+  "Visualisasikan grafik batang 3D dinamis yang tumbuh berundak dengan indikator persentase mengambang dan efek floating smooth.",
+  "Bentuk chip mikroprosesor persegi dengan pin di sisinya, memancarkan pulsa energi listrik yang mengalir melalui jalur sirkuit matriks.",
+  "Visualisasikan 3 kartu kaca glassmorphism melayang yang saling bertukar posisi dengan rotasi sumbu Y pseudo-3D yang sangat elegan.",
+  "Bentuk brankas digital persegi tebal dengan pintu membuka secara pseudo-3D, memancarkan partikel cahaya ke arah kamera.",
+  "Visualisasikan piramida bertingkat geometris dengan lapisan balok yang bergeser ritmis secara horizontal mengikuti irama sinus.",
+  "Animasi harus memiliki efek parallax di mana layer balok latar belakang bergerak lebih lambat daripada objek poligon di depan.",
+  "Objek utama berupa prisma heksagonal yang mengambang (floating) dengan efek easing Math.sin() yang sangat smooth dan stabil di tengah.",
+  "Setiap elemen balok harus muncul dengan efek masking dari bawah ke atas secara bertingkat (staggered cascade).",
+  "Metamorfosis poligon: dari kubus 3D bertransformasi halus menjadi grafik tren naik, lalu menjadi lambang perisai keamanan."
 ];
 
 const isForm = (v: unknown): v is FormState =>

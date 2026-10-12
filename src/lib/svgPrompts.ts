@@ -59,8 +59,8 @@ Setiap konsep wajib berisi:
 Aturan konsep:
 - Semua konsep harus berbeda, modern, komersial, dan layak untuk Shutterstock, Adobe Stock, Pond5, Storyblocks, dan Vecteezy.
 - KOMPOSISI PRESISI & SAFE MARGIN: Objek utama WAJIB berpusat persis di tengah kanvas (center-aligned: width / 2, height / 2). Berikan safe margin minimal 15% dari tepi layar (ukuran objek maksimal 70% dari minSide) agar objek TIDAK PERNAH terpotong atau keluar dari kanvas saat bergerak atau membesar.
-- ANTI-GENERIK VEKTOR: Hindari desain flat kaku pemula! Wajib gunakan palet warna kaya (minimal 4 warna), gradasi (<linearGradient>, <radialGradient>), efek pencahayaan vektor (filter glow/shadow), elemen kurva dinamis (<path d="... ">), dan ornamen geometris berlapis.
-- MOTION DINAMIS: Gunakan easing matematis yang halus (seperti sin/cos progress, back, bounce, atau cubic-bezier). Buat gerakan terasa organik, lentur, dan sinematik layaknya buatan Lottie / After Effects.
+- ANTI-GENERIK VEKTOR & ANTI-SPINNER (PENTING): JANGAN buat desain klise malas berupa lingkaran berputar konsentris / spinning loading rings! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: struktur kubus isometrik, diagram balok bertingkat, chip sirkuit kotak, prisma kristal, atau kurva ilustratif unik). Wajib gunakan palet warna kaya (minimal 4 warna), gradasi (<linearGradient>, <radialGradient>), efek filter glow/shadow, dan kurva dinamis (<path d="... ">).
+- MOTION DINAMIS BERVARIASI: Jangan hanya animasi rotasi putar biasa! Gunakan translasi sumbu X/Y, animasi skala elastis, efek floating halus, masking clipPath, dan stroke-dashoffset yang membentuk garis ilustrasi secara dinamis.
 - Semua konsep harus realistis dibuat dengan manipulasi string SVG murni via JavaScript.
 - Jangan gunakan logo, brand, karakter berlisensi, atau file eksternal dari internet.
 
@@ -124,13 +124,20 @@ ATURAN VISUAL VEKTOR:
    - Wajib hitung titik tengah: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height).
    - Objek utama (hero vector element) WAJIB berada tepat di tengah layar (centered at cx, cy).
    - SAFE MARGIN (ANTI-TERPOTONG): Ukuran maksimal objek utama (termasuk glow dan saat scale membesar) MAKSIMAL 70% dari minSide (radius <= minSide * 0.35). Wajib beri safe margin minimal 15% dari tepi kanvas agar objek TIDAK PERNAH terpotong atau keluar dari frame saat bergerak, berputar, atau memantul.
-·  ANTI-GENERIK VEKTOR: Hindari desain pemula! Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (<linearGradient>, <radialGradient>), efek pencahayaan/glow (<filter id="glow">), kurva dinamis (<path d="...">), dan ornamen pendukung (partikel vektor, grid teknologis, stroke dinamis).
+·  ANTI-GENERIK VEKTOR & ANTI-SPINNER (WAJIB DITAATI):
+   - DILARANG KERAS membuat visual klise malas berupa lingkaran konsentris berputar biasa, cincin HUD putar, atau loading ring generik!
+   - Objek utama WAJIB memiliki bentuk anatomi konkret sesuai tema:
+     * Jika Bisnis / Finansial: Buat grafik balok bertingkat 3D, koin segi-delapan tebal, grafik tren dinamis, atau brankas modern dengan tag <path> dan <rect>.
+     * Jika Teknologi / AI / Data: Buat chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru (BUKAN cuma lingkaran putar).
+     * Jika Abstrak / Futuristik: Buat kubus isometrik 3D, prisma heksagonal melayang, atau pita melengkung (ribbon) dinamis.
+     * Jika Kreatif / Desain: Buat bingkai berlapis, lembaran kartu floating, atau susunan balok geometris elegan.
+   - Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (<linearGradient>, <radialGradient>), efek pencahayaan/glow (<filter id="glow">), dan kurva dinamis (<path d="...">).
 ·  Komposisi rapi, seimbang, dan objek utama terlihat jelas menjadi fokus utama.
 ·  Jangan gunakan logo, brand, watermark, karakter berlisensi, atau asset eksternal dari internet.
 
 ATURAN MOTION VEKTOR:
 ·  Animasi harus smooth, fluid, dan fleksibel dengan easing matematis (seperti Math.sin, Math.cos, back, bounce, atau cubic interpolation).
-·  MOTION DINAMIS: Gunakan pergerakan berlapis (layer background bergerak pelan/parallax, layer utama bergerak ritmis, stroke dasharray animasi mengalir).
+·  MOTION DINAMIS BERVARIASI: JANGAN HANYA MEMUTAR OBJEK! Kombinasikan pergerakan mengambang halus (floating/bobbing vertikal), animasi skala elastis (squash & stretch), perpindahan koordinat sumbu X/Y, dan stroke-dashoffset yang membentuk garis ilustrasi secara dinamis.
 ·  LOOPING MULUS: Rancang agar pergerakan di akhir durasi (progress = 1.0) menyambung mulus kembali ke awal (progress = 0.0).
 
 {{SAFE_MODE}}

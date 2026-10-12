@@ -84,16 +84,16 @@ const DEFAULT_FORM: FormState = {
 };
 
 const RANDOM_SVG_IDEAS = [
-  "Gunakan gradasi <linearGradient> dinamis dengan animasi x1/x2 atau stop-color yang bergeser halus mengikuti progress.",
-  "Buat stroke-dasharray dan stroke-dashoffset yang teranimasi mengikuti progress sehingga garis kurva terlihat digambar langsung (line drawing effect).",
-  "Gunakan filter glow (<filter id='glow'>) pada elemen vektor utama di tengah kanvas untuk efek visual sinematik.",
-  "Tambahkan ornamen lingkaran geometris konsentris dengan rotasi berlawanan arah di sekitar objek utama.",
-  "Objek vektor utama membesar dengan bouncing curve lalu membelah menjadi partikel-partikel kecil dan menyatu kembali.",
-  "Gunakan transformasi SVG transform='rotate(...) translate(...) scale(...)' dengan pusat titik tengah persis di (cx, cy).",
-  "Buat efek garis kurva dinamis bergelombang (<path d='...'>) yang mengalir harmonis sepanjang durasi video.",
-  "Tambahkan efek masking / clipPath dinamis yang membuka objek dari tengah ke luar seiring bertambahnya progress.",
-  "Latar belakang transparan dengan ornamen vektor melayang halus yang memiliki variasi opacity dan ukuran.",
-  "Elemen ikon utama memancarkan gelombang sonik melingkar berulang (pulse radar rings) dengan opasitas memudar."
+  "Bentuk objek utama berupa kubus isometrik 3D menggunakan <polygon> dan <linearGradient> dengan lapisan yang membuka secara ritmis (JANGAN buat lingkaran berputar biasa).",
+  "Gunakan grafik balok bertingkat dengan kurva tren naik <path d='...'> dan animasi stroke-dashoffset (line drawing effect) yang sangat halus.",
+  "Bentuk chip prosesor persegi dengan pin logam di 4 sisi, memancarkan garis sirkuit listrik bercahaya (<filter id='glow'>) yang merambat dinamis.",
+  "Visualisasikan 3 kartu vektor mengambang dengan efek pseudo-3D dan gradasi neon elegan yang bergeser posisinya secara bergantian.",
+  "Bentuk brankas digital persegi tebal dengan pintu membuka, memancarkan bintang partikel emas ke arah depan.",
+  "Gunakan transformasi SVG gabungan translate & scale dengan kurva easing kubik sehingga objek terasa berbobot dan elastis.",
+  "Buat efek kurva dinamis bergelombang (<path d='...'>) menyerupai pita ribbon neon yang meliuk harmonis sepanjang durasi video.",
+  "Tambahkan efek masking / clipPath poligon yang membuka objek utama dari bawah ke atas secara bertingkat.",
+  "Latar belakang transparan dengan ornamen kubus melayang halus yang memiliki variasi opacity dan ukuran.",
+  "Metamorfosis vektor: objek utama bermetamorfosis dari kubus balok menjadi grafik pertumbuhan, lalu menjadi lambang perisai keamanan."
 ];
 
 const isForm = (v: unknown): v is FormState =>
