@@ -1,8 +1,8 @@
 @echo off
 setlocal
-title Motion Studio Local Server
+title ZAE MOTION Local Server
 echo ========================================================
-echo  Motion Studio - Starting Local Server
+echo  ZAE MOTION - Starting Local Server
 echo ========================================================
 echo.
 

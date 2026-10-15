@@ -388,12 +388,42 @@ export default function App() {
       {/* Header */}
       <header className="px-4 py-2.5 border-b border-white/10 bg-[#080b13] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow">
-            <Video className="w-4 h-4 text-white" />
+          {/* Modern Kinetic Logo */}
+          <div className="relative group flex items-center justify-center">
+            <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 opacity-70 blur-[5px] group-hover:opacity-100 transition duration-300" />
+            <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-[#0c1322] to-[#060913] border border-cyan-400/30 flex items-center justify-center shadow-lg shadow-black/80">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+                <defs>
+                  <linearGradient id="zae-logo-grad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#38BDF8" />
+                    <stop offset="0.5" stopColor="#6366F1" />
+                    <stop offset="1" stopColor="#F43F5E" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M4.5 5.5H19.5L7.5 18.5H19.5"
+                  stroke="url(#zae-logo-grad)"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="19.5" cy="5.5" r="1.5" fill="#38BDF8" />
+              </svg>
+            </div>
           </div>
           <div>
-            <h1 className="text-sm font-black uppercase tracking-[0.2em] text-white leading-none">Motion Studio</h1>
-            <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-500 mt-1">Turbo GPU Engine</p>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-black uppercase tracking-[0.22em] bg-gradient-to-r from-white via-zinc-100 to-zinc-300 bg-clip-text text-transparent leading-none">
+                ZAE MOTION
+              </h1>
+              <span className="px-1.5 py-0.5 rounded-[5px] text-[7.5px] font-black uppercase tracking-wider bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 text-cyan-300 border border-cyan-500/30 leading-none">
+                PRO
+              </span>
+            </div>
+            <p className="text-[7.5px] font-bold uppercase tracking-[0.25em] text-zinc-400 mt-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+              Turbo GPU Engine
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">

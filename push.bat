@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ==============================================
-echo  Motion Studio - Auto Git Sync & Push
+echo  ZAE MOTION - Auto Git Sync & Push
 echo ==============================================
 
 set "GIT=C:\Users\lenovo\AppData\Local\Programs\PortableGit\cmd\git.exe"
