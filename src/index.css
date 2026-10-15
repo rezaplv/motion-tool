@@ -48,3 +48,16 @@ body {
 .animate-border-beam {
   animation: border-beam 2.8s linear infinite;
 }
+
+@keyframes rect-beam {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -122.27;
+  }
+}
+
+.animate-rect-beam {
+  animation: rect-beam 2.2s linear infinite;
+}
