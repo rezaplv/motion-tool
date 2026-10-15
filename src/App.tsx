@@ -388,27 +388,42 @@ export default function App() {
       {/* Header */}
       <header className="px-4 py-2.5 border-b border-white/10 bg-[#080b13] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          {/* Modern Kinetic Logo */}
+          {/* Modern Kinetic Logo with Animated Border Light Chaser */}
           <div className="relative group flex items-center justify-center">
-            <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 opacity-70 blur-[5px] group-hover:opacity-100 transition duration-300" />
-            <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-[#0c1322] to-[#060913] border border-cyan-400/30 flex items-center justify-center shadow-lg shadow-black/80">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
-                <defs>
-                  <linearGradient id="zae-logo-grad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#38BDF8" />
-                    <stop offset="0.5" stopColor="#6366F1" />
-                    <stop offset="1" stopColor="#F43F5E" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M4.5 5.5H19.5L7.5 18.5H19.5"
-                  stroke="url(#zae-logo-grad)"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="19.5" cy="5.5" r="1.5" fill="#38BDF8" />
-              </svg>
+            {/* Outer pulsing neon ambient aura */}
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 opacity-60 blur-[6px] group-hover:opacity-100 transition duration-300 animate-pulse" />
+
+            {/* Squircle Container with Border Beam */}
+            <div className="relative w-8.5 h-8.5 p-[1.5px] rounded-[11px] overflow-hidden flex items-center justify-center shadow-xl shadow-black/80">
+              {/* Spinning Electric Chaser Light */}
+              <div
+                className="absolute -inset-[150%] animate-border-beam"
+                style={{
+                  background:
+                    "conic-gradient(from 0deg, transparent 0deg, transparent 260deg, rgba(56, 189, 248, 0.4) 280deg, #38BDF8 320deg, #FFFFFF 345deg, #F43F5E 360deg)",
+                }}
+              />
+
+              {/* Inner Dark Glassmorphism Core */}
+              <div className="relative w-full h-full rounded-[9.5px] bg-gradient-to-br from-[#0c1322] to-[#060913] flex items-center justify-center z-10">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+                  <defs>
+                    <linearGradient id="zae-logo-grad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#38BDF8" />
+                      <stop offset="0.5" stopColor="#6366F1" />
+                      <stop offset="1" stopColor="#F43F5E" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M4.5 5.5H19.5L7.5 18.5H19.5"
+                    stroke="url(#zae-logo-grad)"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="19.5" cy="5.5" r="1.5" fill="#38BDF8" />
+                </svg>
+              </div>
             </div>
           </div>
           <div>
