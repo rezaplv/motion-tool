@@ -12,6 +12,8 @@ export function getOutputDimensions(config: Pick<VideoConfig, "resolution" | "as
       return { width: preset.height, height: preset.width };
     case "1:1":
       return { width: preset.height, height: preset.height };
+    case "16:10":
+      return { width: preset.width, height: Math.round((preset.width * 10) / 16 / 2) * 2 };
     default:
       return { width: preset.width, height: preset.height };
   }

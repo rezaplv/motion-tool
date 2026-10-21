@@ -5,7 +5,7 @@ export type InputMode = "code" | "layer";
 
 export type ResolutionPreset = "720p" | "1080p" | "2K" | "4K";
 
-export type AspectRatio = "16:9" | "9:16" | "1:1";
+export type AspectRatio = "16:9" | "16:10" | "9:16" | "1:1";
 
 export type DownloadFormat = "mp4" | "mov";
 
@@ -92,7 +92,7 @@ export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
 export function normalizeConfig(raw: Partial<VideoConfig> & Record<string, unknown>): VideoConfig {
   const c = { ...DEFAULT_VIDEO_CONFIG, ...raw } as VideoConfig;
   if (!(c.resolution in RESOLUTION_PRESETS)) c.resolution = DEFAULT_VIDEO_CONFIG.resolution;
-  if (!["16:9", "9:16", "1:1"].includes(c.aspectRatio)) c.aspectRatio = "16:9";
+  if (!["16:9", "16:10", "9:16", "1:1"].includes(c.aspectRatio)) c.aspectRatio = "16:9";
   if (!["mp4", "mov"].includes(c.downloadFormat)) c.downloadFormat = "mp4";
   if (!["turbo", "realtime", "compatibility"].includes(c.renderEngine)) c.renderEngine = "turbo";
   if (!["template", "custom"].includes(c.targetSizeMode)) c.targetSizeMode = "template";

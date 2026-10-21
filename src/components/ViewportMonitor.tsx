@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Expand, Gauge, Grid2X2, Pause, Play, RotateCcw, SquareTerminal } from "lucide-react";
+import { Camera, Expand, Gauge, Grid2X2, Pause, Play, RotateCcw, SquareTerminal, Tv } from "lucide-react";
 import type { AssetMap, EngineMode } from "../types";
 import { compileForMode } from "../lib/compile";
 import { createFrameSource, type FrameSource } from "../lib/frameSource";
@@ -61,6 +61,7 @@ export function ViewportMonitor(props: ViewportMonitorProps) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [showCheckerboard, setShowCheckerboard] = usePersistentState<boolean>("viewportCheckerboard", true, (v): v is boolean => typeof v === "boolean");
+  const [screenFit, setScreenFit] = usePersistentState<"contain" | "cover">("viewportScreenFit", "contain", (v): v is "contain" | "cover" => v === "contain" || v === "cover");
 
   const timeRef = useRef(0); // detik
   const onErrorRef = useRef(props.onRuntimeError);
@@ -264,6 +265,19 @@ export function ViewportMonitor(props: ViewportMonitorProps) {
             Cover ({props.posterTime.toFixed(1)}s)
           </ToolbarButton>
           <ToolbarButton
+            onClick={() => setScreenFit((v) => (v === "contain" ? "cover" : "contain"))}
+            tone={screenFit === "cover" ? "cyan" : undefined}
+            active={screenFit === "cover"}
+            title={
+              screenFit === "cover"
+                ? "Mode Penuh Layar (Cover): Mengisi seluruh layar monitor tanpa bar atas-bawah. Klik untuk mode Fit proporsional."
+                : "Mode Fit Proporsional: Menjaga rasio video asli. Klik untuk Penuh Layar (Cover)."
+            }
+          >
+            <Tv className="w-3 h-3" />
+            {screenFit === "cover" ? "Penuh Layar" : "Fit Layar"}
+          </ToolbarButton>
+          <ToolbarButton
             onClick={() => setShowCheckerboard((v) => !v)}
             tone={showCheckerboard ? "amber" : undefined}
             active={showCheckerboard}
@@ -291,20 +305,31 @@ export function ViewportMonitor(props: ViewportMonitorProps) {
         <div
           ref={containerRef}
           className={`relative w-full flex items-center justify-center overflow-hidden ${
-            showCheckerboard ? "bg-checkerboard" : "bg-black"
-          } ${
-            isFullscreen ? "h-full" : "aspect-video rounded-xl border border-white/5"
+            isFullscreen ? "h-full !bg-black" : (showCheckerboard ? "bg-checkerboard" : "bg-black aspect-video rounded-xl border border-white/5")
           }`}
         >
           <canvas
             ref={canvasRef}
             width={preview.width}
             height={preview.height}
-            className="block w-full h-full object-contain"
+            className={`block w-full h-full ${screenFit === "cover" ? "object-cover" : "object-contain"}`}
             aria-label="Preview animasi"
           />
           {isFullscreen && (
             <div className="absolute top-3 right-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setScreenFit((v) => (v === "contain" ? "cover" : "contain"))}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold uppercase transition-all ${
+                  screenFit === "cover"
+                    ? "bg-cyan-600/90 hover:bg-cyan-500 border-cyan-400 text-white shadow-lg shadow-cyan-900/50"
+                    : "bg-black/60 hover:bg-black/80 border-white/20 text-white"
+                }`}
+                title="Ganti mode: Fit (Rasio Asli dengan bar) atau Cover (Penuh Layar tanpa bar atas/bawah)"
+              >
+                <Tv className="w-3.5 h-3.5" />
+                {screenFit === "cover" ? "Penuh Layar (Cover)" : "Fit Rasio"}
+              </button>
               <button
                 type="button"
                 onClick={() => setIsPlaying((p) => !p)}
@@ -456,12 +481,13 @@ function ToolbarButton({
   children: React.ReactNode;
   onClick: () => void;
   title?: string;
-  tone?: "emerald" | "amber";
+  tone?: "emerald" | "amber" | "cyan";
   active?: boolean;
 }) {
   const tones = {
     emerald: "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
     amber: "bg-amber-500/10 border-amber-500/30 text-amber-300",
+    cyan: "bg-cyan-500/10 border-cyan-500/30 text-cyan-300",
   };
   const cls = tone && active ? tones[tone] : "bg-white/5 border-white/10 text-zinc-300";
   return (

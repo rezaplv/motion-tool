@@ -102,6 +102,7 @@ const DURATIONS = [5, 6, 8, 10, 12, 15, 20, 25, 30, 45, 60];
 const SCENES = [1, 2, 3, 4, 5, 6];
 const RATIOS: { v: AspectRatio; label: string }[] = [
   { v: "16:9", label: "16:9 🖥️" },
+  { v: "16:10", label: "16:10 💻" },
   { v: "9:16", label: "9:16 📱" },
   { v: "1:1", label: "1:1 🟦" },
 ];

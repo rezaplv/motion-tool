@@ -11,7 +11,7 @@ interface ConfigPanelProps {
 }
 
 const RESOLUTIONS: ResolutionPreset[] = ["720p", "1080p", "2K", "4K"];
-const RATIOS: AspectRatio[] = ["16:9", "9:16", "1:1"];
+const RATIOS: AspectRatio[] = ["16:9", "16:10", "9:16", "1:1"];
 const FPS_OPTIONS = [24, 30, 60];
 // Durasi umum microstock. "Custom" di UI membuka angka bebas 1–300 detik.
 const DURATION_PRESETS = [1, 3, 5, 6, 8, 10, 12, 15, 20, 25, 30, 45, 60, 90, 120];
@@ -151,7 +151,7 @@ export function ConfigPanel({ config, onChange, disabled = false }: ConfigPanelP
       <div className="grid grid-cols-2 gap-3">
         <section className="space-y-1.5">
           <span className={label}>Rasio Canvas</span>
-          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-black/30 border border-white/5">
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-black/30 border border-white/5">
             {RATIOS.map((r) => (
               <button key={r} type="button" onClick={() => update("aspectRatio", r)} className={`${segBase} ${config.aspectRatio === r ? segOn : segOff}`}>
                 {r}
