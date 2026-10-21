@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardPaste, Grid2X2, GripVertical, Play, Wand2, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardPaste, Grid2X2, GripVertical, Play, Trash2, Wand2, X, XCircle } from "lucide-react";
 import type { EngineMode } from "../types";
 import { sanitizeCode, trimProse } from "../lib/sanitizeCode";
 import { compileForMode, lintCode } from "../lib/compile";
@@ -246,7 +246,7 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
   else if (error) status = { tone: "error", badge: "ERROR", text: `Syntax Error: ${error}${!appliedHere ? " — preview tetap memakai kode valid sebelumnya." : ""}` };
   else if (runtimeError && appliedHere) status = { tone: "error", badge: "RUNTIME", text: `Runtime Error di preview: ${runtimeError}` };
   else if (warnings.length > 0) status = { tone: "warn", badge: "PERINGATAN", text: warnings[0] };
-  else status = { tone: "clean", badge: "CLEAN", text: appliedHere ? "Code Clean: No syntax errors detected!" : "Code Clean — menerapkan ke preview..." };
+  else status = { tone: "clean", badge: "KODE VALID", text: appliedHere ? "Kode Valid: Tidak ada syntax error yang terdeteksi!" : "Kode Valid — menerapkan ke preview..." };
 
   const toneCls = {
     clean: { badge: "text-emerald-300 border-emerald-500/50 bg-emerald-500/10", box: "border-emerald-500/20 bg-emerald-500/5 text-emerald-200", icon: CheckCircle2, ic: "text-emerald-400" },
@@ -330,7 +330,10 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
               <AlertTriangle className="w-3.5 h-3.5 text-emerald-400" />
               Auto-Lint Analyzer
             </span>
-            <span className={`px-2 py-0.5 rounded-md border text-[9px] font-black ${toneCls.badge}`}>{status.badge}</span>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[9px] font-black tracking-wider ${toneCls.badge}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              {status.badge}
+            </span>
           </div>
           <div className={`flex items-start justify-center gap-2 px-3 py-2.5 rounded-xl border font-mono text-[10.5px] ${toneCls.box}`} aria-live="polite">
             <StatusIcon className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${toneCls.ic}`} />
@@ -383,9 +386,10 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
           type="button"
           onClick={handleClear}
           title="Kosongkan kotak kode (preview tetap memakai kode terakhir)"
-          className="px-3.5 py-3 rounded-xl border border-red-500/30 bg-red-500/5 text-red-300 text-[11px] font-black uppercase hover:bg-red-500/15"
+          className="flex items-center gap-1.5 px-3.5 py-3 rounded-xl border border-red-500/30 bg-red-500/5 text-red-300 text-[11px] font-black uppercase hover:bg-red-500/15"
         >
-          Clear
+          <Trash2 className="w-3.5 h-3.5" />
+          Kosongkan
         </button>
         <button
           type="button"
