@@ -4,7 +4,14 @@ import type { AspectRatio, ResolutionPreset, VideoConfig } from "../types";
 import { RESOLUTION_PRESETS } from "../types";
 import { getOutputDimensions } from "../lib/dimensions";
 import { usePersistentState } from "../lib/usePersistentState";
-import { buildSinglePrompt, buildTemplatePrompt, parseDurationText } from "../lib/canvasPrompts";
+import {
+  buildSinglePrompt,
+  buildStudioMasterPrompt,
+  buildTemplatePrompt,
+  parseDurationText,
+  STUDIO_HEX_PALETTES,
+  STUDIO_STYLE_ANCHORS,
+} from "../lib/canvasPrompts";
 import {
   STYLE_CATEGORIES,
   THEME_CATEGORIES,
@@ -19,7 +26,7 @@ import {
   type PresetCategory,
 } from "../lib/promptPresets";
 
-type Tab = "template" | "single";
+type Tab = "studio" | "template" | "single";
 type ToastType = "info" | "success" | "warning" | "error";
 
 interface FormState {
@@ -50,10 +57,29 @@ interface FormState {
     background: string;
     konsep: string;
   };
+  m?: {
+    tema: string;
+    durasi: number;
+    styleAnchor: string;
+    paletteId: string;
+    rasio: AspectRatio;
+    resolusi: ResolutionPreset;
+    background: string;
+  };
 }
 
+const DEFAULT_STUDIO = {
+  tema: "Quantum AI Core & Isometric Data Matrix",
+  durasi: 10,
+  styleAnchor: "cyber-precision",
+  paletteId: "void-sky",
+  rasio: "16:9" as AspectRatio,
+  resolusi: "1080p" as ResolutionPreset,
+  background: "Bebas, serahkan ke AI (Sesuai Konsep)",
+};
+
 const DEFAULT_FORM: FormState = {
-  tab: "template",
+  tab: "studio",
   t: {
     tema: "Corporate Infographics & Charts",
     durasi: 10,
@@ -80,6 +106,7 @@ const DEFAULT_FORM: FormState = {
     background: "Bebas, serahkan ke AI (Sesuai Konsep)",
     konsep: "Flat vector",
   },
+  m: DEFAULT_STUDIO,
 };
 
 const RANDOM_IDEAS = [
@@ -161,10 +188,12 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
 
   const t = { ...DEFAULT_FORM.t, ...form.t };
   const s = { ...DEFAULT_FORM.s, ...form.s };
-  const tab: Tab = form.tab === "single" ? "single" : "template";
+  const m = { ...DEFAULT_STUDIO, ...form.m };
+  const tab: Tab = form.tab === "single" ? "single" : form.tab === "template" ? "template" : "studio";
 
   const setT = (patch: Partial<FormState["t"]>) => setForm((f) => ({ ...f, t: { ...DEFAULT_FORM.t, ...f.t, ...patch } }));
   const setS = (patch: Partial<FormState["s"]>) => setForm((f) => ({ ...f, s: { ...DEFAULT_FORM.s, ...f.s, ...patch } }));
+  const setM = (patch: Partial<typeof DEFAULT_STUDIO>) => setForm((f) => ({ ...f, m: { ...DEFAULT_STUDIO, ...f.m, ...patch } }));
   const setTab = (next: Tab) => {
     setTemaError(false);
     setForm((f) => ({ ...f, tab: next }));
@@ -176,8 +205,9 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
     setForm((f) => {
       const ft = { ...DEFAULT_FORM.t, ...f.t, durasi: config.duration, rasio: config.aspectRatio, resolusi: config.resolution };
       const fs = { ...DEFAULT_FORM.s, ...f.s, rasio: config.aspectRatio };
+      const fm = { ...DEFAULT_STUDIO, ...f.m, durasi: config.duration, rasio: config.aspectRatio, resolusi: config.resolution };
       if (parseDurationText(fs.durasi) !== config.duration) fs.durasi = `${config.duration} detik`;
-      return { ...f, t: ft, s: fs };
+      return { ...f, t: ft, s: fs, m: fm };
     });
     setTemaError(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,9 +222,28 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
 
   const tDims = getOutputDimensions({ resolution: t.resolusi, aspectRatio: t.rasio });
   const sDims = getOutputDimensions({ resolution: config.resolution, aspectRatio: s.rasio });
+  const mDims = getOutputDimensions({ resolution: m.resolusi, aspectRatio: m.rasio });
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const resLabel = (res: ResolutionPreset, _w: number, _h: number) =>
     RES_OPTIONS.find((o) => o.v === res)?.short ?? RESOLUTION_PRESETS[res].shortLabel;
+
+  const studioText = useMemo(
+    () =>
+      buildStudioMasterPrompt({
+        tema: m.tema.trim() || "[ISI TEMA]",
+        durasi: m.durasi,
+        styleAnchor: m.styleAnchor,
+        paletteId: m.paletteId,
+        rasio: m.rasio,
+        resolusi: resLabel(m.resolusi, mDims.width, mDims.height),
+        background: m.background,
+        width: mDims.width,
+        height: mDims.height,
+        assetKeys,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [m.tema, m.durasi, m.styleAnchor, m.paletteId, m.rasio, m.resolusi, m.background, mDims.width, mDims.height, assetKeys]
+  );
 
   const templateText = useMemo(
     () =>
@@ -243,10 +292,10 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
 
   if (!open) return null;
 
-  const text = tab === "template" ? templateText : singleText;
+  const text = tab === "studio" ? studioText : tab === "template" ? templateText : singleText;
 
   async function handleCopy(fromFooter: boolean) {
-    const tema = tab === "template" ? t.tema : s.tema;
+    const tema = tab === "studio" ? m.tema : tab === "template" ? t.tema : s.tema;
     if (!tema.trim()) {
       setTemaError(true);
       temaRef.current?.focus();
@@ -265,7 +314,11 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
 
     // Samakan Config dengan prompt supaya hasil render sesuai yang diminta ke AI.
     const patch: Partial<VideoConfig> = {};
-    if (tab === "template") {
+    if (tab === "studio") {
+      if (m.durasi !== config.duration) patch.duration = m.durasi;
+      if (m.rasio !== config.aspectRatio) patch.aspectRatio = m.rasio;
+      if (m.resolusi !== config.resolution) patch.resolution = m.resolusi;
+    } else if (tab === "template") {
       if (t.durasi !== config.duration) patch.duration = t.durasi;
       if (t.rasio !== config.aspectRatio) patch.aspectRatio = t.rasio;
       if (t.resolusi !== config.resolution) patch.resolution = t.resolusi;
@@ -278,13 +331,13 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
     const applied = changed ? onApplyConfig(patch) : false;
 
     // Sinkronisasi otomatis: jika prompt minta Transparan, aktifkan autoStripBg
-    const bg = tab === "template" ? t.background : s.background;
+    const bg = tab === "studio" ? m.background : tab === "template" ? t.background : s.background;
     const isTrans = bg.toLowerCase().includes("transparan") || bg.toLowerCase().includes("alpha");
     try {
       localStorage.setItem("autoStripBg", isTrans ? "true" : "false");
     } catch {}
 
-    const kind = tab === "template" ? "Template prompt (10 konsep)" : "Single prompt";
+    const kind = tab === "studio" ? "Studio Master Prompt (Anti-Similarity)" : tab === "template" ? "Template prompt (10 konsep)" : "Single prompt";
     if (changed && !applied) {
       onToast("warning", `${kind} disalin. Config tidak diubah karena render sedang berjalan.`);
     } else if (changed) {
@@ -326,19 +379,181 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
 
         {/* Tabs */}
         <div className="px-6 sm:px-8 pt-5">
-          <div className="grid grid-cols-2 gap-1.5 p-1.5 rounded-[20px] bg-black/60 border border-white/10" role="tablist">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 p-1.5 rounded-[20px] bg-black/60 border border-white/10" role="tablist">
+            <TabButton active={tab === "studio"} onClick={() => setTab("studio")} icon={<Sparkles className="w-4 h-4" />}>
+              ⭐ Studio Master (Anti-Similarity)
+            </TabButton>
             <TabButton active={tab === "template"} onClick={() => setTab("template")} icon={<SlidersHorizontal className="w-4 h-4" />}>
-              1. Template Prompt (10 Konsep)
+              1. Template (10 Konsep)
             </TabButton>
             <TabButton active={tab === "single"} onClick={() => setTab("single")} icon={<FileText className="w-4 h-4" />}>
-              2. Single Prompt (1 Prompt Langsung)
+              2. Single Prompt
             </TabButton>
           </div>
         </div>
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 sm:px-8 py-5 space-y-6">
-          {tab === "template" ? (
+          {tab === "studio" ? (
+            <>
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-cyan-500/10 border border-amber-500/30 flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-amber-300">
+                    Formula Studio-Grade (Standar Buck, ManvsMachine, Ordinary Folk)
+                  </p>
+                  <p className="text-[11px] text-zinc-300 leading-relaxed">
+                    Mengunci palet warna Hex eksklusif, mewajibkan <strong>Pseudo-3D Isometrik &amp; 3 Lapisan Kedalaman</strong>, serta <strong>melarang keras lingkaran orbit/HUD klise</strong> agar hasil video 100% orisinil dan bebas <em>similarity rejection</em> di Shutterstock &amp; Adobe Stock.
+                  </p>
+                </div>
+              </div>
+
+              <section className="space-y-3">
+                <HeaderRow title="1. Tema Utama Video (Spesifik)" selected={m.tema} />
+                <input
+                  ref={temaRef}
+                  value={m.tema}
+                  onChange={(e) => {
+                    setM({ tema: e.target.value });
+                    if (e.target.value.trim()) setTemaError(false);
+                  }}
+                  placeholder="Contoh: Quantum AI Core / Clean Energy Grid / Decentralized FinTech Vault..."
+                  aria-label="Tema utama video"
+                  aria-invalid={temaError}
+                  className={`${inputCls} ${temaError ? "border-red-500/70" : "border-amber-500/30"}`}
+                />
+                {temaError && <p className="text-[10px] text-red-300 font-bold">Tema wajib diisi.</p>}
+                <PresetPicker
+                  categories={THEME_CATEGORIES}
+                  value={m.tema}
+                  onPick={(v) => {
+                    setM({ tema: v });
+                    setTemaError(false);
+                  }}
+                  searchPlaceholder={`🔍 Cari dari ${countItems(THEME_CATEGORIES)} preset tema siap pakai...`}
+                  categoryLabel="Kategori Tema"
+                  itemLabel="Pilih Sub-Tema"
+                  itemPlaceholder="— Pilih dari daftar atau ketik di atas —"
+                />
+              </section>
+
+              <section className="space-y-3">
+                <h3 className={sectionTitle}>2. Style Anchor (Karakteristik Studio Dunia)</h3>
+                <div className="grid gap-2">
+                  {STUDIO_STYLE_ANCHORS.map((anchor) => {
+                    const active = m.styleAnchor === anchor.id;
+                    return (
+                      <button
+                        key={anchor.id}
+                        type="button"
+                        onClick={() => setM({ styleAnchor: anchor.id })}
+                        className={`w-full text-left p-3.5 rounded-2xl border transition-all ${
+                          active
+                            ? "bg-amber-500/15 border-amber-400 text-white shadow-lg shadow-amber-950/30"
+                            : "bg-black/40 border-white/10 text-zinc-300 hover:border-white/25"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[12px] font-black ${active ? "text-amber-300" : "text-white"}`}>{anchor.label}</span>
+                          {active && <span className="px-2 py-0.5 rounded-full bg-amber-400 text-black text-[9px] font-black uppercase">Aktif</span>}
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">{anchor.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h3 className={sectionTitle}>3. Palet Warna Eksklusif (Hex Studio Lock)</h3>
+                <div className="grid sm:grid-cols-2 gap-2.5">
+                  {STUDIO_HEX_PALETTES.map((pal) => {
+                    const active = m.paletteId === pal.id;
+                    return (
+                      <button
+                        key={pal.id}
+                        type="button"
+                        onClick={() => setM({ paletteId: pal.id })}
+                        className={`text-left p-3.5 rounded-2xl border transition-all ${
+                          active
+                            ? "bg-amber-500/15 border-amber-400 text-white shadow-lg shadow-amber-950/30"
+                            : "bg-black/40 border-white/10 text-zinc-300 hover:border-white/25"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                          <span className={`text-[11px] font-black ${active ? "text-amber-300" : "text-zinc-200"}`}>{pal.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {pal.colors.map((hex) => (
+                            <div key={hex} className="flex items-center gap-1 bg-black/60 px-1.5 py-1 rounded-lg border border-white/10">
+                              <span className="w-3.5 h-3.5 rounded-md border border-white/20 shrink-0" style={{ backgroundColor: hex }} />
+                              <span className="text-[9px] font-mono text-zinc-300">{hex}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h3 className={sectionTitle}>4. Durasi Loop Seamless (Detik)</h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2" role="radiogroup" aria-label="Durasi video">
+                    {DURATIONS.map((d) => (
+                      <Chip key={d} active={m.durasi === d} onClick={() => setM({ durasi: d })}>
+                        {d}s
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h3 className={sectionTitle}>5. Rasio Frame</h3>
+                  <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Rasio video">
+                    {RATIOS.map((r) => (
+                      <Chip key={r.v} active={m.rasio === r.v} onClick={() => setM({ rasio: r.v })}>
+                        {r.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <span className={fieldLabel}>6. Target Resolusi</span>
+                  <div className="relative">
+                    <select value={m.resolusi} onChange={(e) => setM({ resolusi: e.target.value as ResolutionPreset })} className={selectCls}>
+                      {RES_OPTIONS.map((r) => (
+                        <option key={r.v} value={r.v} className="bg-zinc-950">
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Caret />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <span className={fieldLabel}>7. Mode Background</span>
+                  <div className="relative">
+                    <select value={m.background} onChange={(e) => setM({ background: e.target.value })} className={selectCls}>
+                      {BACKGROUND_OPTIONS.map((o) => (
+                        <option key={o} value={o} className="bg-zinc-950">
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                    <Caret />
+                  </div>
+                </div>
+              </section>
+
+              <ResultBox
+                label="Hasil Studio Master Prompt (100% Anti-Similarity — Siap Tempel ke AI)"
+                text={studioText}
+                textareaRef={resultRef}
+                onCopy={() => handleCopy(false)}
+              />
+            </>
+          ) : tab === "template" ? (
             <>
               <section className="space-y-3">
                 <HeaderRow title="1. Isi Tema Video" selected={t.tema} />
@@ -651,7 +866,7 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
             className="flex items-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-600 hover:from-amber-300 hover:to-orange-500 text-black text-[11px] font-black uppercase tracking-wider shadow-lg shadow-orange-900/30"
           >
             <Copy className="w-4 h-4" />
-            {tab === "template" ? "Salin Template Prompt AI" : "Salin Single Prompt AI"}
+            {tab === "studio" ? "Salin Studio Master Prompt AI" : tab === "template" ? "Salin Template Prompt AI" : "Salin Single Prompt AI"}
           </button>
         </div>
       </div>

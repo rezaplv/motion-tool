@@ -52,6 +52,100 @@ export interface SinglePromptParams {
   assetKeys: string[];
 }
 
+export interface StudioMasterParams {
+  tema: string;
+  durasi: number;
+  styleAnchor: string;
+  paletteId: string;
+  rasio: string;
+  resolusi: string;
+  background: string;
+  width: number;
+  height: number;
+  assetKeys: string[];
+}
+
+export const STUDIO_STYLE_ANCHORS = [
+  {
+    id: "cyber-precision",
+    label: "High-End Minimalist Cyber-Precision (Buck / ManvsMachine)",
+    desc: "High-End Minimalist Cyber-Precision (Perpaduan arsitektur isometrik bersih, lempengan akrilik transparan, dan dinamika data futuristik elegan).",
+  },
+  {
+    id: "swiss-kinetic",
+    label: "Swiss Bauhaus Kinetic Geometry (Ordinary Folk)",
+    desc: "Swiss Bauhaus Kinetic Geometry (Komposisi grid modular presisi, konstruksi poligon asimetris bertingkat, dan artikulasi mekanikal yang sangat halus).",
+  },
+  {
+    id: "frosted-glass",
+    label: "Futuristic Frosted Glassmorphism & Prism",
+    desc: "Futuristic Frosted Glassmorphism (Susunan lempengan kaca berlapis berdimensi, bevel highlight tajam, bias cahaya multi-stop gradient, dan aliran sirkuit mikro).",
+  },
+  {
+    id: "isometric-fintech",
+    label: "Tactile 3D Isometric FinTech & Enterprise",
+    desc: "Tactile 3D Isometric Architecture (Konstruksi monumen finansial/teknologi pseudo-3D isometrik dengan blok bertingkat, face directional shading, dan sinyal pulsa data).",
+  },
+  {
+    id: "organic-ribbon",
+    label: "Generative 3D Bezier Ribbon & Fluid Matrix",
+    desc: "Generative Parametric Ribbon Matrix (Jalinan kurva Bezier pita 3D berlapis yang mengalir harmonis dengan ketebalan dinamis dan kedalaman ruang volumetrik).",
+  },
+] as const;
+
+export const STUDIO_HEX_PALETTES = [
+  {
+    id: "void-sky",
+    label: "Deep Void & Electric Sky (Default Studio)",
+    colors: ["#07090e", "#1e293b", "#38bdf8", "#818cf8", "#ffffff"],
+    spec: `  * Base/Background: #07090e (Deep Void Navy)
+  * Struktur Utama: #1e293b (Slate Titanium)
+  * Aksen Pendar 1: #38bdf8 (Electric Sky)
+  * Aksen Pendar 2: #818cf8 (Soft Indigo Plasma)
+  * Highlight Cahaya: #ffffff dengan globalAlpha lembut.`,
+  },
+  {
+    id: "obsidian-gold",
+    label: "Obsidian & Liquid Gold Luxury (FinTech / Executive)",
+    colors: ["#080705", "#1c1917", "#f59e0b", "#fde68a", "#ffffff"],
+    spec: `  * Base/Background: #080705 (Deep Obsidian Black)
+  * Struktur Utama: #1c1917 (Warm Graphite Titanium)
+  * Aksen Pendar 1: #f59e0b (Liquid Amber Gold)
+  * Aksen Pendar 2: #fde68a (Champagne Metallic Glow)
+  * Highlight Cahaya: #ffffff dengan globalAlpha lembut.`,
+  },
+  {
+    id: "emerald-mint",
+    label: "Midnight Emerald & Cyber Mint (Clean Energy / AI)",
+    colors: ["#040d0a", "#0f2922", "#10b981", "#6ee7b7", "#ecfdf5"],
+    spec: `  * Base/Background: #040d0a (Deep Forest Void)
+  * Struktur Utama: #0f2922 (Dark Jade Monolith)
+  * Aksen Pendar 1: #10b981 (Emerald Laser Pulse)
+  * Aksen Pendar 2: #6ee7b7 (Cyber Mint Neon)
+  * Highlight Cahaya: #ecfdf5 dengan globalAlpha lembut.`,
+  },
+  {
+    id: "titanium-ultraviolet",
+    label: "Titanium & Ultraviolet Plasma (Quantum / Web3)",
+    colors: ["#090612", "#1e1b2e", "#a855f7", "#f43f5e", "#ffffff"],
+    spec: `  * Base/Background: #090612 (Cosmic Obsidian)
+  * Struktur Utama: #1e1b2e (Gunmetal Violet)
+  * Aksen Pendar 1: #a855f7 (Ultraviolet Plasma)
+  * Aksen Pendar 2: #f43f5e (Crimson Laser Accent)
+  * Highlight Cahaya: #ffffff dengan globalAlpha lembut.`,
+  },
+  {
+    id: "arctic-slate",
+    label: "Arctic Night & Glacier Cyan (Corporate / Cloud)",
+    colors: ["#090d16", "#1e293b", "#64748b", "#22d3ee", "#f8fafc"],
+    spec: `  * Base/Background: #090d16 (Arctic Night)
+  * Struktur Utama: #1e293b (Executive Slate)
+  * Aksen Pendar 1: #22d3ee (Glacier Cyan)
+  * Aksen Pendar 2: #64748b (Brushed Steel Mist)
+  * Highlight Cahaya: #f8fafc dengan globalAlpha lembut.`,
+  },
+] as const;
+
 export const MICROSTOCK_SAFE_RULES = `
 ATURAN MICROSTOCK SAFE MODE (WAJIB DITAATI):
 - TIDAK BOLEH ada logo, trademark, nama perusahaan, nama produk, nama aplikasi, slogan, watermark, QR code, URL, handle media sosial, nomor telepon, atau email.
@@ -315,5 +409,54 @@ export function buildSinglePrompt(p: SinglePromptParams): string {
     TINGGI: String(p.height),
     SAFE_MODE: MICROSTOCK_SAFE_RULES,
     ATURAN_KODE: canvasCodeRules(secs, p.width, p.height, p.assetKeys, p.background),
+  });
+}
+
+// ======================= STUDIO MASTER PROMPT (ANTI-SIMILARITY) =======================
+export const STUDIO_MASTER_PROMPT = `Kamu adalah Lead Creative Technologist dan Senior Motion Designer di studio motion graphic kelas dunia (standar Buck, ManvsMachine, Ordinary Folk).
+Tugasmu adalah merancang satu animasi kode Canvas 2D yang 100% ORISINIL, ELEGAN, dan SIAP JUAL untuk Microstock Premium (Shutterstock Select / Adobe Stock).
+
+KONSEP & ARAHAN ART DIRECTION:
+- TEMA UTAMA: {{TEMA}}
+- STYLE ANCHOR: {{STYLE_ANCHOR}}
+- RASIO & TARGET RESOLUSI: {{RASIO}} ({{RESOLUSI}} — {{LEBAR}}x{{TINGGI}} px)
+- PALET WARNA (Wajib gunakan kode Hex eksklusif ini):
+{{HEX_PALETTE_SPEC}}{{ATURAN_BG}}
+- DURASI: {{DURASI}} detik seamless loop sempurna (frame 0 identik dengan frame akhir).
+
+ATURAN ANTI-SIMILARITY (MUTLAK DIPATUHI):
+1. DILARANG KERAS membuat elemen lingkaran cincin klise, garis dashed orbit berputar, HUD lingkaran ala Iron Man, atau bola yang mengitari objek seperti planet.
+2. Objek utama HARUS berupa konstruksi anatomi orisinil: gunakan proyeksi Pseudo-3D Isometrik (fungsi toIso(x,y,z)), susunan poligon parametrik, lempengan kaca berlapis (layered translucent wafers), atau jalinan kurva Bezier pita ganda yang bergerak dinamis.
+3. Wajib memiliki 3 lapisan kedalaman visual:
+   - Deep Layer: Grid matriks teknis halus dan ambient radial glow.
+   - Hero Layer: Konstruksi utama dengan directional face shading, bevel highlight, dan gradient multi-stop.
+   - Atmospheric Layer: Partikel debu data melayang halus dengan variasi kedalaman (foreground bokeh).
+4. DINAMIKA GERAK: Gunakan formula pergerakan non-linear (easeInOutCubic dan damping spring). Berikan offset fase (phase shift) agar komponen bergerak berurutan (staggered cascade), bukan bergerak kaku bersamaan.
+{{SAFE_MODE}}
+KONTRAK KODE TEKNIS:
+- Tuliskan fungsi: function draw(ctx, time, width, height, assets)
+- Waktu (time) dalam DETIK. Hitung loop menggunakan: const t = time % {{DURASI}}; const p = t / {{DURASI}};
+- Seluruh elemen harus proporsional terhadap: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height);
+- Berikan margin aman minimal 18% dari tepi kanvas (ukuran objek maksimal minSide * 0.70) agar tidak ada bagian yang terpotong.
+- Murni Canvas API vanilla tanpa library eksternal, tanpa requestAnimationFrame, tanpa Date.now().{{ATURAN_ASSET}}
+
+Output hanya satu blok kode JavaScript siap pakai tanpa penjelasan teks apapun.`;
+
+export function buildStudioMasterPrompt(p: StudioMasterParams): string {
+  const anchor = STUDIO_STYLE_ANCHORS.find((a) => a.id === p.styleAnchor) ?? STUDIO_STYLE_ANCHORS[0];
+  const palette = STUDIO_HEX_PALETTES.find((pal) => pal.id === p.paletteId) ?? STUDIO_HEX_PALETTES[0];
+  const d = Math.max(1, Math.round(p.durasi * 100) / 100);
+  return fillTemplate(STUDIO_MASTER_PROMPT, {
+    TEMA: p.tema,
+    STYLE_ANCHOR: anchor.desc,
+    HEX_PALETTE_SPEC: palette.spec,
+    DURASI: String(d),
+    RASIO: p.rasio,
+    RESOLUSI: p.resolusi,
+    LEBAR: String(p.width),
+    TINGGI: String(p.height),
+    ATURAN_BG: backgroundRuleLine(p.background),
+    ATURAN_ASSET: assetRuleLine(p.assetKeys),
+    SAFE_MODE: MICROSTOCK_SAFE_RULES,
   });
 }
