@@ -1,13 +1,15 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar,
   CheckSquare,
+  Clock,
   Copy,
   Download,
   Flame,
   Globe,
   Package,
   Plus,
+  RefreshCw,
   Search,
   Sparkles,
   Square,
@@ -31,6 +33,19 @@ import {
   type EventCategory,
 } from "../lib/eventCalendar";
 import {
+  daysUntil,
+  formatDateId,
+  nextOccurrence,
+  parseIsoDate,
+} from "../lib/holidayEngine";
+import {
+  isCacheStale,
+  liveHolidaysToEvents,
+  loadLiveCache,
+  syncLiveHolidays,
+  type LiveHolidayCache,
+} from "../lib/holidaySync";
+import {
   buildBatchStudioEventsPrompt,
   STUDIO_HEX_PALETTES,
   STUDIO_STYLE_ANCHORS,
@@ -53,6 +68,12 @@ interface EventRadarModalProps {
   onSelectEventForStudio: (preset: StudioEventPreset) => void;
   onOpenBulkZip: () => void;
   onToast: (type: "info" | "success" | "warning" | "error", message: string) => void;
+}
+
+interface ResolvedCalendarEvent extends CalendarEventItem {
+  resolvedDate: Date | null;
+  daysLeft: number | null;
+  exactDateStr: string | null;
 }
 
 const isCustomEventsArray = (v: unknown): v is CalendarEventItem[] =>
@@ -96,7 +117,8 @@ export function EventRadarModal({
   onOpenBulkZip,
   onToast,
 }: EventRadarModalProps) {
-  const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
+  const now = useMemo(() => new Date(), []);
+  const currentMonth = now.getMonth() + 1;
   const goldenMonth1 = (currentMonth % 12) + 1;
   const goldenMonth2 = ((currentMonth + 1) % 12) + 1;
 
@@ -109,6 +131,12 @@ export function EventRadarModal({
   // State Multi-Select untuk Batch Prompt (// ====)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Live Holiday Sync (Nager.Date API + Cache)
+  const [liveCache, setLiveCache] = useState<LiveHolidayCache | null>(() =>
+    loadLiveCache()
+  );
+  const [syncingLive, setSyncingLive] = useState(false);
 
   // Custom events yang disimpan di browser user
   const [customEvents, setCustomEvents] = usePersistentState<CalendarEventItem[]>(
@@ -132,10 +160,96 @@ export function EventRadarModal({
     useState<CalendarEventItem["recommendedPalette"]>("obsidian-gold");
   const [newKeywords, setNewKeywords] = useState("");
 
-  const allEvents = useMemo(
-    () => [...customEvents, ...CALENDAR_EVENTS],
-    [customEvents]
-  );
+  // Auto-sync hari libur resmi dunia saat modal dibuka jika cache belum ada / sudah > 7 hari
+  useEffect(() => {
+    if (!open) return;
+    if (!isCacheStale(liveCache)) return;
+    let active = true;
+    setSyncingLive(true);
+    syncLiveHolidays()
+      .then((fresh) => {
+        if (active) setLiveCache(fresh);
+      })
+      .catch(() => {
+        /* Tetap jalan dengan 110+ event bawaan + mesin tanggal otomatis */
+      })
+      .finally(() => {
+        if (active) setSyncingLive(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, liveCache]);
+
+  const handleManualSync = async () => {
+    if (syncingLive) return;
+    setSyncingLive(true);
+    try {
+      const fresh = await syncLiveHolidays();
+      setLiveCache(fresh);
+      onToast(
+        "success",
+        `Berhasil sinkronisasi ${fresh.items.length} hari libur resmi dunia (${fresh.years.join("–")})!`
+      );
+    } catch {
+      onToast(
+        "warning",
+        "Gagal menghubungi server kalender live — tetap menggunakan Mesin Tanggal Otomatis bawaan."
+      );
+    } finally {
+      setSyncingLive(false);
+    }
+  };
+
+  // Hitung tanggal otomatis untuk seluruh event kurasi & gabungkan dengan Live API + Custom
+  const allEvents = useMemo<ResolvedCalendarEvent[]>(() => {
+    const curatedDateMap = new Map<string, Date | null>();
+
+    const resolvedCurated: ResolvedCalendarEvent[] = CALENDAR_EVENTS.map((ev) => {
+      const dt = ev.rule ? nextOccurrence(ev.rule, now) : null;
+      curatedDateMap.set(ev.id, dt);
+      const dynamicMonth = dt ? dt.getUTCMonth() + 1 : ev.month;
+      return {
+        ...ev,
+        month: dynamicMonth,
+        resolvedDate: dt,
+        daysLeft: dt ? daysUntil(dt, now) : null,
+        exactDateStr: dt ? formatDateId(dt) : null,
+      };
+    });
+
+    const liveItems = liveHolidaysToEvents(
+      liveCache,
+      resolvedCurated,
+      curatedDateMap,
+      now
+    ).map<ResolvedCalendarEvent>((ev) => {
+      const dt = ev.isoDate ? parseIsoDate(ev.isoDate) : null;
+      return {
+        ...ev,
+        resolvedDate: dt,
+        daysLeft: dt ? daysUntil(dt, now) : null,
+        exactDateStr: dt ? formatDateId(dt) : ev.dateLabel,
+      };
+    });
+
+    const resolvedCustom: ResolvedCalendarEvent[] = customEvents.map((ev) => ({
+      ...ev,
+      source: "custom",
+      resolvedDate: null,
+      daysLeft: null,
+      exactDateStr: null,
+    }));
+
+    return [...resolvedCustom, ...resolvedCurated, ...liveItems].sort((a, b) => {
+      if (a.daysLeft !== null && b.daysLeft !== null) {
+        return a.daysLeft - b.daysLeft;
+      }
+      if (a.daysLeft !== null) return -1;
+      if (b.daysLeft !== null) return 1;
+      return a.month - b.month;
+    });
+  }, [customEvents, liveCache, now]);
 
   const filteredEvents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -153,7 +267,7 @@ export function EventRadarModal({
         return false;
       }
       if (q) {
-        const hay = `${ev.title} ${ev.desc} ${ev.promptTheme} ${ev.dateLabel} ${ev.keywords.join(" ")}`.toLowerCase();
+        const hay = `${ev.title} ${ev.desc} ${ev.promptTheme} ${ev.dateLabel} ${ev.exactDateStr ?? ""} ${ev.keywords.join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -198,7 +312,7 @@ export function EventRadarModal({
         return {
           title: ev.title,
           countryLabel: `${cInfo.flag} ${cInfo.label}`,
-          dateLabel: `${MONTH_NAMES[ev.month - 1].full} (${ev.dateLabel})`,
+          dateLabel: `${ev.exactDateStr ?? `${MONTH_NAMES[ev.month - 1].full} (${ev.dateLabel})`}`,
           tema: ev.promptTheme,
           styleAnchor: ev.recommendedStyle,
           paletteId: ev.recommendedPalette,
@@ -367,21 +481,38 @@ export function EventRadarModal({
               <Calendar className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
                   Global Event Radar
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                  15 Negara & Wilayah • 12 Bulan
+                  {allEvents.length} Event Aktif • Auto-Update Tiap Tahun
                 </span>
+                {liveCache && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    🟢 Live Sync ({liveCache.years.join("–")})
+                  </span>
+                )}
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5">
-                Pilih Negara & Bulan ➔ Klik <strong className="text-amber-300">Studio Master</strong> untuk 1 video, atau <strong className="text-purple-300">Centang Beberapa Event</strong> untuk Batch Prompt <code className="text-cyan-300">// ====</code> (Bulk ZIP)
+                Tanggal bergeser otomatis setiap tahun (Masehi, Paskah, Hijriah, Imlek, & Live API) ➔ Klik <strong className="text-amber-300">Studio Master</strong> atau <strong className="text-purple-300">Batch // ====</strong>
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleManualSync}
+              disabled={syncingLive}
+              title="Sinkronkan ulang daftar hari libur resmi dunia dari server Live API"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-[9.5px] font-black uppercase tracking-wider disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${syncingLive ? "animate-spin" : ""}`}
+              />
+              {syncingLive ? "Syncing..." : "Sync Live"}
+            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -799,11 +930,26 @@ export function EventRadarModal({
                             <span>{countryInfo.label}</span>
                           </span>
                           <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold">
-                            {monthInfo.full} • {ev.dateLabel}
+                            {ev.exactDateStr
+                              ? ev.exactDateStr
+                              : `${monthInfo.full} • ${ev.dateLabel}`}
                           </span>
+                          {ev.daysLeft !== null && ev.daysLeft >= 0 && (
+                            <span className="px-2 py-0.5 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[9.5px] font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {ev.daysLeft === 0
+                                ? "Hari Ini!"
+                                : `${ev.daysLeft} hari lagi`}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1.5">
+                          {ev.source === "live" && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[8.5px] font-black uppercase">
+                              LIVE API
+                            </span>
+                          )}
                           <span
                             className={`px-2 py-0.5 rounded-lg text-[9.5px] font-black border ${windowStatus.badgeClass}`}
                             title={windowStatus.desc}

@@ -8,6 +8,9 @@
  * atau gunakan fitur Custom Event di UI yang tersimpan di localStorage.
  */
 
+import type { DateRule } from "./holidayEngine";
+import { EXTRA_EVENTS, LEGACY_RULES } from "./eventCalendarExtra";
+
 export type CountryCode =
   | "all"
   | "global"
@@ -64,6 +67,12 @@ export interface CalendarEventItem {
   /** Kata kunci microstock bahasa Inggris untuk mempermudah metadata saat upload */
   keywords: string[];
   isCustom?: boolean;
+  /** Aturan tanggal otomatis (lihat holidayEngine.ts). Jika ada, bulan & tanggal dihitung ulang tiap tahun. */
+  rule?: DateRule;
+  /** Sumber data: kurasi studio, live API hari libur resmi, atau buatan user */
+  source?: "curated" | "live" | "custom";
+  /** Tanggal ISO (YYYY-MM-DD) untuk event live dari API */
+  isoDate?: string;
 }
 
 export const COUNTRIES: {
@@ -231,7 +240,7 @@ export function getUploadWindowStatus(
   };
 }
 
-export const CALENDAR_EVENTS: CalendarEventItem[] = [
+export const CALENDAR_EVENTS_BASE: CalendarEventItem[] = [
   // ==========================================
   // JANUARI (Bulan 1)
   // ==========================================
@@ -1169,3 +1178,12 @@ export const CALENDAR_EVENTS: CalendarEventItem[] = [
     keywords: ["canadian thanksgiving", "october autumn", "amber maple", "harvest gold", "fall retail"],
   },
 ];
+
+// ==========================================
+// GABUNGAN: Kurasi Inti + Ekspansi Lengkap (ala timeanddate) + Aturan Tanggal Otomatis
+// ==========================================
+export const CALENDAR_EVENTS: CalendarEventItem[] = [...CALENDAR_EVENTS_BASE, ...EXTRA_EVENTS].map((ev) => ({
+  ...ev,
+  rule: ev.rule ?? LEGACY_RULES[ev.id],
+  source: "curated" as const,
+}));
