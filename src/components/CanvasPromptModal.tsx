@@ -149,6 +149,12 @@ interface CanvasPromptModalProps {
   /** Terapkan durasi/rasio/resolusi ke Config. Return false jika ditolak (mis. sedang render). */
   onApplyConfig: (patch: Partial<VideoConfig>) => boolean;
   onToast: (type: ToastType, message: string) => void;
+  externalStudioPreset?: {
+    tema: string;
+    styleAnchor: string;
+    paletteId: string;
+    ts: number;
+  } | null;
 }
 
 const sectionTitle = "text-[11px] font-black uppercase tracking-wider text-amber-400";
@@ -180,7 +186,15 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyConfig, onToast }: CanvasPromptModalProps) {
+export function CanvasPromptModal({
+  open,
+  onClose,
+  config,
+  assetKeys,
+  onApplyConfig,
+  onToast,
+  externalStudioPreset,
+}: CanvasPromptModalProps) {
   const [form, setForm] = usePersistentState<FormState>("canvasPromptForm", DEFAULT_FORM, isForm);
   const temaRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLTextAreaElement>(null);
@@ -198,6 +212,26 @@ export function CanvasPromptModal({ open, onClose, config, assetKeys, onApplyCon
     setTemaError(false);
     setForm((f) => ({ ...f, tab: next }));
   };
+
+  // Sinkronisasi dari Global Event Radar saat user memilih event
+  useEffect(() => {
+    if (!externalStudioPreset) return;
+    setForm((f) => ({
+      ...f,
+      tab: "studio",
+      t: { ...DEFAULT_FORM.t, ...f.t, tema: externalStudioPreset.tema },
+      s: { ...DEFAULT_FORM.s, ...f.s, tema: externalStudioPreset.tema },
+      m: {
+        ...DEFAULT_STUDIO,
+        ...f.m,
+        tema: externalStudioPreset.tema,
+        styleAnchor: externalStudioPreset.styleAnchor,
+        paletteId: externalStudioPreset.paletteId,
+      },
+    }));
+    setTemaError(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalStudioPreset?.ts]);
 
   // Saat dibuka: ikuti durasi/rasio/resolusi Config agar prompt cocok dengan video yang akan dirender.
   useEffect(() => {

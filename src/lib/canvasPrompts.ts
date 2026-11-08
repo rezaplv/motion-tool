@@ -144,6 +144,26 @@ export const STUDIO_HEX_PALETTES = [
   * Aksen Pendar 2: #64748b (Brushed Steel Mist)
   * Highlight Cahaya: #f8fafc dengan globalAlpha lembut.`,
   },
+  {
+    id: "crimson-imperial",
+    label: "Imperial Crimson & Liquid Gold (Festive / Oriental / Retail)",
+    colors: ["#0f0406", "#2a0a10", "#ef4444", "#f59e0b", "#fef2f2"],
+    spec: `  * Base/Background: #0f0406 (Deep Imperial Ruby Void)
+  * Struktur Utama: #2a0a10 (Dark Velvet Burgundy)
+  * Aksen Pendar 1: #ef4444 (Radiant Crimson Pulse)
+  * Aksen Pendar 2: #f59e0b (Liquid Dynasty Gold)
+  * Highlight Cahaya: #fef2f2 dengan globalAlpha lembut.`,
+  },
+  {
+    id: "sakura-aurora",
+    label: "Midnight Sakura & Pearl Cyan (Spring / Cultural / Lifestyle)",
+    colors: ["#09060f", "#1f162b", "#f472b6", "#38bdf8", "#fdf2f8"],
+    spec: `  * Base/Background: #09060f (Midnight Indigo Velvet)
+  * Struktur Utama: #1f162b (Dusk Amethyst Slate)
+  * Aksen Pendar 1: #f472b6 (Luminous Sakura Rose)
+  * Aksen Pendar 2: #38bdf8 (Pearl Cyan Breeze)
+  * Highlight Cahaya: #fdf2f8 dengan globalAlpha lembut.`,
+  },
 ] as const;
 
 export const MICROSTOCK_SAFE_RULES = `

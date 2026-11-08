@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Code2, Layers, Package, Sparkles, SquareTerminal, Trash2, Video, X } from "lucide-react";
+import { Calendar, Code2, Layers, Package, Sparkles, SquareTerminal, Trash2, Video, X } from "lucide-react";
 import type {
   AssetMap,
   BackgroundSetting,
@@ -35,6 +35,7 @@ import { LogsPanel } from "./components/LogsPanel";
 import { BulkRenderPanel } from "./components/BulkRenderPanel";
 import { SvgPromptModal } from "./components/SvgPromptModal";
 import { CanvasPromptModal } from "./components/CanvasPromptModal";
+import { EventRadarModal, type StudioEventPreset } from "./components/EventRadarModal";
 import { AiGeneratorsMenu } from "./components/AiGeneratorsMenu";
 import { PreflightPanel } from "./components/PreflightPanel";
 import { ToastContainer, type ToastData } from "./components/Toast";
@@ -72,6 +73,8 @@ export default function App() {
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [promptOpen, setPromptOpen] = useState(false);
+  const [eventRadarOpen, setEventRadarOpen] = useState(false);
+  const [studioPreset, setStudioPreset] = useState<StudioEventPreset | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const closePrompt = useCallback(() => setPromptOpen(false), []);
 
@@ -515,6 +518,15 @@ export default function App() {
           </button>
           <button
             type="button"
+            onClick={() => setEventRadarOpen(true)}
+            aria-haspopup="dialog"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 hover:from-cyan-500/30 hover:to-indigo-500/30 border border-cyan-400/40 text-cyan-200 text-[9px] font-black uppercase tracking-wider shadow shadow-cyan-950/30"
+          >
+            <Calendar className="w-3.5 h-3.5 text-cyan-300" />
+            Event Radar
+          </button>
+          <button
+            type="button"
             onClick={() => setPromptOpen(true)}
             aria-haspopup="dialog"
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[9px] font-black uppercase tracking-wider shadow shadow-orange-900/30"
@@ -681,6 +693,24 @@ export default function App() {
         </aside>
       </div>
 
+      <EventRadarModal
+        open={eventRadarOpen}
+        onClose={() => setEventRadarOpen(false)}
+        onToast={showToast}
+        onSelectEventForStudio={(preset) => {
+          setStudioPreset(preset);
+          setEventRadarOpen(false);
+          if (engineMode !== "canvas") {
+            setEngineMode("canvas");
+          }
+          setPromptOpen(true);
+          showToast(
+            "success",
+            `Tema "${preset.eventTitle}" diterapkan ke Studio Master Prompt!`
+          );
+        }}
+      />
+
       {engineMode === "canvas" ? (
         <CanvasPromptModal
           open={promptOpen}
@@ -689,6 +719,7 @@ export default function App() {
           assetKeys={assetKeys}
           onApplyConfig={applyConfigFromPrompt}
           onToast={showToast}
+          externalStudioPreset={studioPreset}
         />
       ) : (
         <SvgPromptModal
