@@ -73,6 +73,8 @@ export interface CalendarEventItem {
   source?: "curated" | "live" | "custom";
   /** Tanggal ISO (YYYY-MM-DD) untuk event live dari API */
   isoDate?: string;
+  /** Daftar negara tempat hari libur/event ini dirayakan (Multi-Country Tagging bebas duplikat) */
+  countries?: Exclude<CountryCode, "all">[];
 }
 
 export const COUNTRIES: {
@@ -501,30 +503,30 @@ export const CALENDAR_EVENTS_BASE: CalendarEventItem[] = [
     month: 4,
     dateLabel: "Minggu Paskah (Maret/April)",
     country: "de",
-    title: "European Spring & Modern Geometric Easter",
+    title: "Easter Sunday (Spring Holiday & Modern Geometric Easter)",
     category: "Cultural & Holiday",
     demand: "Tinggi",
-    desc: "Musim libur musim semi dan ritel keluarga di Jerman, Inggris, dan AS.",
+    desc: "Minggu Paskah & musim libur musim semi di AS, Inggris, Jerman, Kanada, Australia, dan Eropa.",
     promptTheme:
       "Sculpted Kinetic Ovoid Sculpture & Pastel Glass Rings (Konstruksi pahatan oval bertingkat yang berotasi halus dengan cincin kaca transparan bercahaya)",
     recommendedStyle: "swiss-kinetic",
     recommendedPalette: "sakura-aurora",
-    keywords: ["spring holiday", "easter geometry", "kinetic sculpture", "pastel glass", "spring sale"],
+    keywords: ["easter sunday", "spring holiday", "easter geometry", "kinetic sculpture", "pastel glass"],
   },
   {
     id: "apr-us-tax-finance",
     month: 4,
-    dateLabel: "15 April (Q1 Financial Close)",
+    dateLabel: "15 April (Tax Day & Q1 Close)",
     country: "us",
-    title: "US Tax Season, Q1 Earnings & Audit Analytics",
+    title: "Tax Day (US Tax Season, Q1 Earnings & Audit Analytics)",
     category: "Tech & Corporate",
     demand: "Tinggi",
-    desc: "Perusahaan finansial, akuntansi, dan SaaS AS banyak membeli visualisasi data dan grafik pertumbuhan.",
+    desc: "Hari batas pelaporan pajak AS (15 April); perusahaan finansial, akuntansi, dan SaaS banyak membeli visualisasi data dan grafik pertumbuhan.",
     promptTheme:
       "Precision Financial Ledger Matrix & Isometric Growth Columns (Kolom kuartal finansial 3D presisi dengan aliran data audit terenkripsi)",
     recommendedStyle: "isometric-fintech",
     recommendedPalette: "arctic-slate",
-    keywords: ["financial report", "tax season", "quarterly earnings", "data analytics", "fintech chart"],
+    keywords: ["tax day", "financial report", "tax season", "quarterly earnings", "fintech chart"],
   },
 
   // ==========================================
@@ -1180,10 +1182,124 @@ export const CALENDAR_EVENTS_BASE: CalendarEventItem[] = [
 ];
 
 // ==========================================
+// MULTI-COUNTRY TAGGING (Satu Kartu untuk Bersama — 0% Duplikat di "Semua Negara")
+// ==========================================
+const ALL_MARKETS: Exclude<CountryCode, "all">[] = [
+  "global", "us", "ca", "uk", "de", "fr", "au", "jp", "kr", "cn", "me", "in", "br", "id",
+];
+
+/**
+ * Pemetaan negara tempat masing-masing event dirayakan.
+ * - Di filter "Semua Negara" (`all`), tiap event tetap hanya muncul 1 kali (tidak pernah duplikat).
+ * - Di filter negara spesifik (misal `us`), event yang berlaku di negara tersebut otomatis muncul.
+ */
+export const EVENT_COUNTRIES_MAP: Record<string, Exclude<CountryCode, "all">[]> = {
+  // Universal / Global Events (berlaku di seluruh pasar termasuk USA)
+  "jan-global-newyear": ALL_MARKETS,
+  "feb-global-valentine": ["global", "us", "ca", "uk", "de", "fr", "au", "jp", "kr", "cn", "in", "br", "id"],
+  "mar-global-iwd": ALL_MARKETS,
+  "apr-global-earthday": ALL_MARKETS,
+  "jun-global-env": ALL_MARKETS,
+  "jul-global-midyear-corp": ALL_MARKETS,
+  "nov-global-blackfriday": ["global", "us", "ca", "uk", "de", "fr", "au", "br", "jp", "kr", "id"],
+  "global-cyber-monday": ["global", "us", "ca", "uk", "de", "fr", "au", "br", "jp", "kr", "id"],
+  "global-giving-tuesday": ["global", "us", "ca", "uk", "de", "au"],
+  "dec-global-yearreview": ALL_MARKETS,
+  "global-nye": ALL_MARKETS,
+
+  // Hari Raya Kristen / Barat Lintas Negara (US, UK, Kanada, Eropa, Australia, dll.)
+  "dec-global-christmas": ["global", "us", "ca", "uk", "de", "fr", "au", "kr", "br", "id"],
+  "global-christmas-eve": ["global", "us", "ca", "uk", "de", "fr", "au", "br"],
+  "apr-de-easter": ["global", "us", "ca", "uk", "de", "fr", "au", "br", "id"],
+  "uk-easter-monday": ["us", "ca", "uk", "de", "fr", "au"],
+  "global-good-friday": ["global", "us", "ca", "uk", "de", "fr", "au", "br", "id"],
+  "uk-boxing-day": ["uk", "ca", "au"],
+  "mar-us-stpatrick": ["us", "uk", "ca", "au"],
+  "oct-us-halloween": ["us", "ca", "uk", "de", "fr", "au", "jp"],
+  "global-hanukkah": ["global", "us", "ca", "uk", "de", "fr", "au"],
+  "uk-pancake-day": ["uk", "us", "ca", "fr", "de", "br", "au"],
+  "de-advent": ["de", "fr", "uk", "us", "ca"],
+  "de-nikolaus": ["de", "fr"],
+  "fr-epiphany": ["fr", "de", "br", "us"],
+
+  // Hari Keluarga, Sosial & Musiman Lintas Negara
+  "may-us-mothersday": ["us", "ca", "de", "au", "jp", "kr", "cn", "in", "br"],
+  "global-fathers-day": ["global", "us", "ca", "uk", "fr", "jp", "in", "br", "id"],
+  "us-labor-day": ["us", "ca"],
+  "may-global-labour": ["global", "de", "fr", "cn", "in", "br", "id", "kr"],
+  "us-veterans-day": ["us", "ca", "fr", "uk"],
+  "uk-remembrance": ["uk", "ca", "au"],
+  "us-black-history": ["us", "ca", "uk"],
+  "us-pride-month": ["us", "ca", "uk", "de", "fr", "au", "br"],
+  "aug-us-backtoschool": ["us", "ca", "uk", "de", "fr", "au"],
+  "sep-us-autumn-equinox": ["us", "ca", "uk", "de", "fr", "jp", "kr", "cn"],
+  "dec-de-winter-snowflake": ["de", "us", "ca", "uk", "fr", "jp", "kr", "cn"],
+  "jun-uk-summer-solstice": ["uk", "us", "ca", "de", "fr"],
+  "jan-global-davos": ["de", "fr", "uk", "us", "global"],
+  "fr-fete-musique": ["fr", "de", "uk", "global"],
+
+  // Hari Besar Islam (Timur Tengah, Indonesia, ASEAN, Global)
+  "mar-me-ramadan": ["me", "id", "global"],
+  "apr-id-lebaran": ["id", "me", "global"],
+  "jun-me-hajj-adha": ["me", "id", "global"],
+  "me-isra-miraj": ["me", "id"],
+  "me-laylat-qadr": ["me", "id"],
+  "me-arafah": ["me", "id"],
+  "me-islamic-new-year": ["me", "id"],
+  "me-mawlid": ["me", "id"],
+
+  // Hari Besar Asia Timur & ASEAN
+  "feb-cn-lunar": ["cn", "id", "kr", "global"],
+  "cn-lantern": ["cn", "id"],
+  "cn-dragon-boat": ["cn", "id"],
+  "sep-cn-midautumn": ["cn", "kr", "id"],
+  "global-white-day": ["jp", "kr", "cn"],
+  "jp-kodomo": ["jp", "kr"],
+  "nov-cn-singlesday": ["cn", "id", "kr", "jp"],
+  "cn-double-12": ["cn", "id"],
+
+  // Hari Peringatan PBB & Kampanye Global
+  "global-happiness": ALL_MARKETS,
+  "global-water-day": ALL_MARKETS,
+  "global-earth-hour": ALL_MARKETS,
+  "global-health-day": ALL_MARKETS,
+  "global-ocean-day": ALL_MARKETS,
+  "global-coffee-day": ALL_MARKETS,
+  "global-pink-october": ALL_MARKETS,
+  "global-mental-health": ALL_MARKETS,
+  "global-movember": ["global", "us", "ca", "uk", "au", "de", "fr"],
+  "global-kindness": ALL_MARKETS,
+  "global-aids-day": ALL_MARKETS,
+};
+
+export function getEventCountries(ev: CalendarEventItem): Exclude<CountryCode, "all">[] {
+  const mapped = ev.countries ?? EVENT_COUNTRIES_MAP[ev.id];
+  if (mapped && mapped.length > 0) {
+    return mapped.includes(ev.country) ? mapped : [ev.country, ...mapped];
+  }
+  if (ev.country === "global") {
+    return ALL_MARKETS;
+  }
+  return [ev.country];
+}
+
+export function eventMatchesCountry(ev: CalendarEventItem, selectedCountry: CountryCode): boolean {
+  if (selectedCountry === "all") return true;
+  if (ev.country === selectedCountry) return true;
+  const list = getEventCountries(ev);
+  return list.includes(selectedCountry);
+}
+
+// ==========================================
 // GABUNGAN: Kurasi Inti + Ekspansi Lengkap (ala timeanddate) + Aturan Tanggal Otomatis
 // ==========================================
-export const CALENDAR_EVENTS: CalendarEventItem[] = [...CALENDAR_EVENTS_BASE, ...EXTRA_EVENTS].map((ev) => ({
-  ...ev,
-  rule: ev.rule ?? LEGACY_RULES[ev.id],
-  source: "curated" as const,
-}));
+export const CALENDAR_EVENTS: CalendarEventItem[] = [...CALENDAR_EVENTS_BASE, ...EXTRA_EVENTS].map((ev) => {
+  const rule = ev.rule ?? LEGACY_RULES[ev.id];
+  const countries = getEventCountries(ev);
+  return {
+    ...ev,
+    rule,
+    countries,
+    source: "curated" as const,
+  };
+});

@@ -29,6 +29,7 @@ import {
   CALENDAR_EVENTS,
   COUNTRIES,
   MONTH_NAMES,
+  eventMatchesCountry,
   getUploadWindowStatus,
   type CalendarEventItem,
   type CountryCode,
@@ -285,7 +286,7 @@ export function EventRadarModal({
   const filteredEvents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return allEvents.filter((ev) => {
-      if (selectedCountry !== "all" && ev.country !== selectedCountry) {
+      if (!eventMatchesCountry(ev, selectedCountry)) {
         return false;
       }
       if (monthFilter === "golden") {
@@ -317,6 +318,22 @@ export function EventRadarModal({
 
   if (!open) return null;
 
+  /**
+   * Jika user sedang memfilter negara tertentu (misal USA) pada event multi-negara
+   * (seperti Christmas / New Year / Easter), tampilkan negara yang sedang difilter
+   * agar badge & Prompt Riset AI fokus ke pasar negara tersebut.
+   */
+  const resolveDisplayCountry = (ev: CalendarEventItem) => {
+    if (
+      selectedCountry !== "all" &&
+      selectedCountry !== "global" &&
+      eventMatchesCountry(ev, selectedCountry)
+    ) {
+      return COUNTRIES.find((c) => c.id === selectedCountry) ?? COUNTRIES[1];
+    }
+    return COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+  };
+
   const toggleSelectEvent = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -342,7 +359,7 @@ export function EventRadarModal({
   const handleCopySingleResearchPrompt = async (ev: ResolvedCalendarEvent) => {
     const dims = getOutputDimensions(config);
     const resLabel = RESOLUTION_PRESETS[config.resolution].shortLabel;
-    const countryInfo = COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+    const countryInfo = resolveDisplayCountry(ev);
     const monthInfo = MONTH_NAMES[ev.month - 1];
 
     const prompt = buildEventResearchPrompt({
@@ -395,7 +412,7 @@ export function EventRadarModal({
       countryFilterLabel: `${activeCountryObj.flag} ${activeCountryObj.label}`,
       monthFilterLabel: monthLabel,
       events: sourceList.map((ev) => {
-        const cInfo = COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+        const cInfo = resolveDisplayCountry(ev);
         return {
           title: ev.title,
           countryLabel: `${cInfo.flag} ${cInfo.label}`,
@@ -428,7 +445,7 @@ export function EventRadarModal({
 
     const batchPrompt = buildBatchStudioEventsPrompt({
       items: selectedEventsList.map((ev) => {
-        const cInfo = COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+        const cInfo = resolveDisplayCountry(ev);
         return {
           title: ev.title,
           countryLabel: `${cInfo.flag} ${cInfo.label}`,
@@ -1014,8 +1031,7 @@ export function EventRadarModal({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredEvents.map((ev) => {
-                const countryInfo =
-                  COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+                const countryInfo = resolveDisplayCountry(ev);
                 const monthInfo = MONTH_NAMES[ev.month - 1];
                 const windowStatus = getUploadWindowStatus(
                   ev.month,

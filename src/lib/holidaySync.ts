@@ -10,7 +10,7 @@
  */
 
 import type { CalendarEventItem, CountryCode, EventCategory } from "./eventCalendar";
-import { COUNTRIES } from "./eventCalendar";
+import { COUNTRIES, eventMatchesCountry } from "./eventCalendar";
 import { formatDateId, parseIsoDate, windowStart } from "./holidayEngine";
 
 type LiveCountry = Exclude<CountryCode, "all" | "global">;
@@ -273,9 +273,9 @@ export function liveHolidaysToEvents(
     const month = date.getUTCMonth() + 1;
     const words = significantWords(`${h.name} ${h.localName}`);
 
-    // Dedupe: lewati jika event kurasi negara sama / global sudah mencakup hari ini (±3 hari, kata kunci cocok)
+    // Dedupe: lewati jika event kurasi yang berlaku di negara ini sudah mencakup hari ini (±3 hari, kata kunci cocok)
     const duplicate = curated.some((ev) => {
-      if (ev.country !== country && ev.country !== "global") return false;
+      if (!eventMatchesCountry(ev, country)) return false;
       const evDate = curatedDates.get(ev.id);
       const close = evDate ? Math.abs(evDate.getTime() - date.getTime()) <= 3 * 86400000 : ev.month === month;
       if (!close) return false;
