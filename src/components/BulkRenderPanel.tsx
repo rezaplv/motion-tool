@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
+import { ClipboardPaste, Download, FileCode, FolderArchive, Plus, Trash2 } from "lucide-react";
 import type { AssetMap, EngineMode, LogFn, VideoConfig } from "../types";
 import { getOutputDimensions } from "../lib/dimensions";
 import { compileForMode } from "../lib/compile";
@@ -58,10 +59,42 @@ function detectMode(code: string, fallback: EngineMode): EngineMode {
 export function BulkRenderPanel(props: BulkRenderPanelProps) {
   const { config, currentMode, onLog, onToast, isBusy, setBusy, blocked = false } = props;
   const [items, setItems] = useState<BulkItem[]>([]);
+  const [inputMethod, setInputMethod] = useState<"paste" | "file">("paste");
+  const [pastedCode, setPastedCode] = useState("");
+  const [batchBaseName, setBatchBaseName] = useState("video_event");
   const [isDragging, setIsDragging] = useState(false);
   const cancelRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dims = getOutputDimensions(config);
+
+  const detectedCodes = useMemo(() => {
+    if (!pastedCode.trim()) return [];
+    return splitMultiCode(pastedCode);
+  }, [pastedCode]);
+
+  const handleAddPastedToQueue = () => {
+    if (detectedCodes.length === 0) {
+      onToast("warning", "Tempel kode teks JavaScript dulu ke dalam kotak.");
+      return;
+    }
+    const name = batchBaseName.trim() || "video_event";
+    const newItems = toItems(name, pastedCode);
+    setItems((prev) => [...prev, ...newItems]);
+    setPastedCode("");
+    onToast("success", `${newItems.length} video berhasil dimasukkan ke antrian Bulk Render!`);
+  };
+
+  const handleDownloadAsTxt = () => {
+    if (!pastedCode.trim()) {
+      onToast("warning", "Tidak ada kode untuk diunduh.");
+      return;
+    }
+    const blob = new Blob([pastedCode], { type: "text/plain;charset=utf-8" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    const filename = `${batchBaseName.trim() || "batch_videos"}_${stamp}.txt`;
+    downloadBlob(blob, filename);
+    onToast("success", `File ${filename} berhasil diunduh!`);
+  };
 
   const updateItem = (id: string, patch: Partial<BulkItem>) =>
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -203,39 +236,137 @@ export function BulkRenderPanel(props: BulkRenderPanelProps) {
 
   return (
     <div className="space-y-4">
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          if (!isBusy) void addFiles(e.dataTransfer.files);
-        }}
-        onClick={() => !isBusy && inputRef.current?.click()}
-        className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
-          isDragging ? "border-purple-400 bg-purple-500/10" : "border-white/15 hover:border-white/30"
-        }`}
-      >
-        <p className="text-xs font-bold text-zinc-300">Drop file kode .txt / .js atau .zip di sini</p>
-        <p className="text-[10px] text-zinc-500 mt-1">
-          Satu file = satu video. Kode Canvas & SVG boleh dicampur, mode dideteksi otomatis. Banyak kode dalam satu file: pisahkan dengan baris{" "}
-          <code className="text-purple-300">// ====</code>
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".txt,.js,.zip"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files) void addFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
+      {/* Tab Sumber Kode Bulk */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10 w-fit">
+        <button
+          type="button"
+          onClick={() => setInputMethod("paste")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+            inputMethod === "paste"
+              ? "bg-purple-600 text-white shadow"
+              : "text-zinc-400 hover:text-white"
+          }`}
+        >
+          <ClipboardPaste className="w-3.5 h-3.5" />
+          Tempel Teks Langsung (Paste)
+        </button>
+        <button
+          type="button"
+          onClick={() => setInputMethod("file")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+            inputMethod === "file"
+              ? "bg-purple-600 text-white shadow"
+              : "text-zinc-400 hover:text-white"
+          }`}
+        >
+          <FolderArchive className="w-3.5 h-3.5" />
+          Upload File (.txt / .zip)
+        </button>
       </div>
+
+      {inputMethod === "paste" ? (
+        <div className="rounded-2xl border border-purple-500/30 bg-[#0d1222] p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-purple-200 flex items-center gap-1.5">
+                <FileCode className="w-4 h-4 text-purple-400" />
+                Tempel Seluruh Teks Kode AI di Sini
+              </p>
+              <p className="text-[10px] text-zinc-400 mt-0.5">
+                Pisahkan antar kode video dengan baris <code className="text-purple-300 font-bold">// ====</code>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-zinc-400">Nama Awalan:</span>
+              <input
+                type="text"
+                value={batchBaseName}
+                onChange={(e) => setBatchBaseName(e.target.value)}
+                placeholder="video_event"
+                className="px-2.5 py-1 rounded-lg bg-black/50 border border-white/10 text-xs text-white w-32 focus:border-purple-400 outline-none"
+              />
+            </div>
+          </div>
+
+          <textarea
+            value={pastedCode}
+            onChange={(e) => setPastedCode(e.target.value)}
+            placeholder="function draw(ctx,time,width,height,assets){ ... }&#10;// ====&#10;function draw(ctx,time,width,height,assets){ ... }"
+            rows={7}
+            className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 focus:border-purple-400 outline-none font-mono text-[11px] text-zinc-200 placeholder:text-zinc-600 resize-y"
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="text-[11px] text-zinc-300">
+              {detectedCodes.length > 0 ? (
+                <span className="text-emerald-400 font-bold">
+                  ✓ Terdeteksi: <strong>{detectedCodes.length} Kode Video</strong> (siap dirender)
+                </span>
+              ) : (
+                <span className="text-zinc-500">
+                  Tempel teks dari AI untuk menghitung jumlah video.
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {detectedCodes.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDownloadAsTxt}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 text-[10px] font-bold uppercase tracking-wider"
+                  title="Simpan teks ini ke file .txt di komputermu"
+                >
+                  <Download className="w-3.5 h-3.5 text-cyan-400" />
+                  Simpan File .txt
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleAddPastedToQueue}
+                disabled={detectedCodes.length === 0}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-purple-950/50 disabled:opacity-40 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                + Masukkan {detectedCodes.length > 0 ? `${detectedCodes.length} Video ` : ""}ke Antrian
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            if (!isBusy) void addFiles(e.dataTransfer.files);
+          }}
+          onClick={() => !isBusy && inputRef.current?.click()}
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
+            isDragging ? "border-purple-400 bg-purple-500/10" : "border-white/15 hover:border-white/30"
+          }`}
+        >
+          <p className="text-xs font-bold text-zinc-300">Drop file kode .txt / .js atau .zip di sini</p>
+          <p className="text-[10px] text-zinc-500 mt-1">
+            Satu file = satu video. Kode Canvas & SVG boleh dicampur, mode dideteksi otomatis. Banyak kode dalam satu file: pisahkan dengan baris{" "}
+            <code className="text-purple-300">// ====</code>
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".txt,.js,.zip"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) void addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[10px] text-zinc-400">
