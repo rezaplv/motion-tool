@@ -12,12 +12,17 @@ export type CountryCode =
   | "all"
   | "global"
   | "us"
-  | "jp"
-  | "de"
+  | "ca"
   | "uk"
-  | "me"
+  | "de"
+  | "fr"
+  | "au"
+  | "jp"
+  | "kr"
   | "cn"
+  | "me"
   | "in"
+  | "br"
   | "id";
 
 export type EventCategory =
@@ -86,10 +91,10 @@ export const COUNTRIES: {
     marketNote: "Pasar pembeli microstock #1 terbesar di dunia (Corporate, Retail, Holiday)",
   },
   {
-    id: "de",
-    label: "Jerman & Eropa",
-    flag: "🇩🇪",
-    marketNote: "Pasar pembeli Eropa terbesar (Engineering, Green Tech, Festival Musiman)",
+    id: "ca",
+    label: "Kanada (Canada)",
+    flag: "🇨🇦",
+    marketNote: "Pasar Amerika Utara berdaya beli tinggi (Canada Day, Thanksgiving, Winter Tech)",
   },
   {
     id: "uk",
@@ -98,10 +103,34 @@ export const COUNTRIES: {
     marketNote: "Pasar agensi kreatif, perbankan, dan event ritel kerajaan/musiman",
   },
   {
+    id: "de",
+    label: "Jerman & Eropa",
+    flag: "🇩🇪",
+    marketNote: "Pasar pembeli Eropa terbesar (Engineering, Green Tech, Festival Musiman)",
+  },
+  {
+    id: "fr",
+    label: "Prancis (France)",
+    flag: "🇫🇷",
+    marketNote: "Pusat mode mewah (Paris Fashion), seni, olahraga, dan Bastille Day",
+  },
+  {
+    id: "au",
+    label: "Australia & Oceania",
+    flag: "🇦🇺",
+    marketNote: "Pasar belahan bumi selatan (Australia Day, Anzac, Vivid Light, Summer Christmas)",
+  },
+  {
     id: "jp",
     label: "Jepang (Japan)",
     flag: "🇯🇵",
     marketNote: "Permintaan tinggi untuk tema musim (Sakura, Momiji), teknologi, dan tradisi",
+  },
+  {
+    id: "kr",
+    label: "Korea Selatan (K-Market)",
+    flag: "🇰🇷",
+    marketNote: "Pasar K-Tech, broadcast hiburan, Seollal, dan Chuseok Harvest Festival",
   },
   {
     id: "cn",
@@ -120,6 +149,12 @@ export const COUNTRIES: {
     label: "India & Asia Selatan",
     flag: "🇮🇳",
     marketNote: "Kebutuhan masif untuk festival cahaya (Diwali), warna (Holi), dan FinTech",
+  },
+  {
+    id: "br",
+    label: "Brasil & Amerika Latin",
+    flag: "🇧🇷",
+    marketNote: "Pasar terbesar Amerika Selatan (Rio Carnival, Festa Junina, Retail)",
   },
   {
     id: "id",
@@ -948,5 +983,189 @@ export const CALENDAR_EVENTS: CalendarEventItem[] = [
     recommendedStyle: "cyber-precision",
     recommendedPalette: "obsidian-gold",
     keywords: ["uae national day", "dubai skyline", "future architecture", "golden falcon", "luxury celebration"],
+  },
+
+  // ==========================================
+  // EKSPANSI PASAR KANADA, AUSTRALIA, PRANCIS, KOREA, BRASIL
+  // ==========================================
+  {
+    id: "jan-au-australiaday",
+    month: 1,
+    dateLabel: "26 Januari",
+    country: "au",
+    title: "Australia Day & Southern Cross Starlight Matrix",
+    category: "National & Civic",
+    demand: "Tinggi",
+    desc: "Hari nasional utama Australia; dipakai luas oleh stasiun TV, ritel musim panas, dan acara kota.",
+    promptTheme:
+      "Southern Cross Constellation Prism & Ocean Cyan Wave Matrix (Formasi kristal rasi bintang Southern Cross di atas gelombang prisma biru samudra dan emas)",
+    recommendedStyle: "frosted-glass",
+    recommendedPalette: "void-sky",
+    keywords: ["australia day", "southern cross", "summer celebration", "sydney harbor", "ocean wave 3d"],
+  },
+  {
+    id: "feb-br-carnival",
+    month: 2,
+    dateLabel: "Februari / Awal Maret",
+    country: "br",
+    title: "Rio Carnival & Kinetic Tropical Rhythm Matrix",
+    category: "Cultural & Holiday",
+    demand: "Sangat Tinggi",
+    desc: "Festival budaya dan pariwisata terbesar di Amerika Latin; visual gelombang pita energi tropis sangat laris.",
+    promptTheme:
+      "Kinetic Samba Feather Geometry & Emerald-Gold Light Waves (Susunan kipas kristal berlapis yang mengayun ritmis dengan gelombang pita zamrud dan emas)",
+    recommendedStyle: "organic-ribbon",
+    recommendedPalette: "emerald-mint",
+    keywords: ["rio carnival", "brazil festival", "tropical rhythm", "emerald gold wave", "latin celebration"],
+  },
+  {
+    id: "feb-kr-seollal",
+    month: 2,
+    dateLabel: "Januari Akhir / Februari",
+    country: "kr",
+    title: "Seollal (Korean Lunar New Year & Obangsaek Silk)",
+    category: "Cultural & Holiday",
+    demand: "Tinggi",
+    desc: "Tahun baru tradisional Korea Selatan; estetika pita sutra modern (Hanbok/Obangsaek) sangat diminati brand K-Beauty & ritel.",
+    promptTheme:
+      "Modern Korean Hanbok Silk Ribbons & Mother-of-Pearl Lattice (Jalinan pita sutra 3D anggun dengan kilau mutiara Najeonchilgi dan kisi geometris Korea)",
+    recommendedStyle: "organic-ribbon",
+    recommendedPalette: "sakura-aurora",
+    keywords: ["seollal", "korean new year", "silk ribbon 3d", "mother of pearl", "korean traditional"],
+  },
+  {
+    id: "mar-fr-fashionweek",
+    month: 3,
+    dateLabel: "Maret & September",
+    country: "fr",
+    title: "Paris Haute Couture & Luxury Runway Prism",
+    category: "Commercial & Retail",
+    demand: "Sangat Tinggi",
+    desc: "Musim peragaan busana dan parfum mewah di Prancis; membutuhkan latar belakang catwalk kaca dan emas minimalis.",
+    promptTheme:
+      "Haute Couture Architectural Catwalk & Champagne Gold Glass Panels (Koridor lempengan kaca buram berlapis emas sampanye dengan bias cahaya studio mode Paris)",
+    recommendedStyle: "frosted-glass",
+    recommendedPalette: "obsidian-gold",
+    keywords: ["paris fashion", "luxury runway", "champagne gold", "haute couture", "perfume background"],
+  },
+  {
+    id: "apr-au-anzac",
+    month: 4,
+    dateLabel: "25 April",
+    country: "au",
+    title: "Anzac Day Dawn Service & Eternal Flame Monolith",
+    category: "National & Civic",
+    demand: "Tinggi",
+    desc: "Hari peringatan nasional penting di Australia dan Selandia Baru dengan nuansa fajar keemasan yang khidmat.",
+    promptTheme:
+      "Solemn Dawn Horizon Monolith & Ascending Golden Ember Rays (Monumen batu obsidian minimalis dengan siluet cahaya fajar keemasan yang naik perlahan)",
+    recommendedStyle: "isometric-fintech",
+    recommendedPalette: "obsidian-gold",
+    keywords: ["anzac day", "dawn service", "eternal flame", "memorial monolith", "golden sunrise"],
+  },
+  {
+    id: "may-ca-victoriaday",
+    month: 5,
+    dateLabel: "Senin Sebelum 25 Mei",
+    country: "ca",
+    title: "Victoria Day & Canadian Spring Tech Summit",
+    category: "National & Civic",
+    demand: "Tinggi",
+    desc: "Libur panjang pembuka musim panas dan puncak konferensi teknologi/AI di Toronto, Vancouver, dan Montreal.",
+    promptTheme:
+      "Geometric Maple Prism & Northern Cyan Light Stream (Prisma daun maple berfaset kristal dengan aliran pita aurora biru-hijau di latar belakang)",
+    recommendedStyle: "frosted-glass",
+    recommendedPalette: "arctic-slate",
+    keywords: ["victoria day", "canada tech", "maple crystal", "aurora stream", "spring holiday"],
+  },
+  {
+    id: "jun-au-vividsydney",
+    month: 6,
+    dateLabel: " akhir Mei – Juni",
+    country: "au",
+    title: "Vivid Winter Light Festival & Projection Mapping",
+    category: "Cultural & Holiday",
+    demand: "Tinggi",
+    desc: "Festival seni cahaya dan proyeksi arsitektur musim dingin terbesar di belahan bumi selatan (Sydney/Melbourne).",
+    promptTheme:
+      "Architectural Sail Prism & Ultraviolet Laser Projection Matrix (Lengkung layar arsitektur 3D yang disinari garis proyeksi laser ultraviolet dan sian)",
+    recommendedStyle: "cyber-precision",
+    recommendedPalette: "titanium-ultraviolet",
+    keywords: ["light festival", "projection mapping", "vivid sydney", "laser architecture", "neon sails"],
+  },
+  {
+    id: "jul-ca-canadaday",
+    month: 7,
+    dateLabel: "1 Juli",
+    country: "ca",
+    title: "Canada Day (1st of July National Celebration)",
+    category: "National & Civic",
+    demand: "Sangat Tinggi",
+    desc: "Hari nasional terbesar di Kanada; permintaan tinggi dari brand ritel, perbankan, dan pemerintah Kanada.",
+    promptTheme:
+      "Isometric Crimson-White Maple Monolith & Radiant Light Burst (Konstruksi kristal daun maple merah-putih berlapis 3D dengan pancaran cahaya perayaan)",
+    recommendedStyle: "swiss-kinetic",
+    recommendedPalette: "crimson-imperial",
+    keywords: ["canada day", "july 1st", "maple leaf 3d", "canadian celebration", "red white abstract"],
+  },
+  {
+    id: "jul-fr-bastilleday",
+    month: 7,
+    dateLabel: "14 Juli",
+    country: "fr",
+    title: "Bastille Day (Fête Nationale Française & Eiffel Lattice)",
+    category: "National & Civic",
+    demand: "Sangat Tinggi",
+    desc: "Hari nasional Prancis (14 Juillet) dan puncak musim acara olahraga/pariwisata musim panas di Eropa.",
+    promptTheme:
+      "Iron Lattice Tower Geometry & Tricolor Sapphire-Crimson Ribbons (Struktur kisi baja arsitektur presisi tinggi dengan jalinan pita cahaya biru-putih-merah)",
+    recommendedStyle: "swiss-kinetic",
+    recommendedPalette: "void-sky",
+    keywords: ["bastille day", "14 juillet", "french national day", "paris tower geometry", "tricolor ribbon"],
+  },
+  {
+    id: "sep-kr-chuseok",
+    month: 9,
+    dateLabel: "September / Awal Oktober",
+    country: "kr",
+    title: "Chuseok Korean Harvest Moon & Golden Persimmon Glow",
+    category: "Cultural & Holiday",
+    demand: "Sangat Tinggi",
+    desc: "Libur terbesar di Korea Selatan; puncak belanja hadiah premium (gift sets) di department store & e-commerce Korea.",
+    promptTheme:
+      "Harvest Full Moon Crystal & Floating Dancheong Geometric Tiles (Bulan purnama emas di atas tatanan ubin geometris tradisional Korea berlapis kaca)",
+    recommendedStyle: "frosted-glass",
+    recommendedPalette: "obsidian-gold",
+    keywords: ["chuseok", "korean thanksgiving", "harvest moon", "luxury gift background", "korean geometry"],
+  },
+  {
+    id: "sep-br-independencia",
+    month: 9,
+    dateLabel: "7 September",
+    country: "br",
+    title: "Brazil Independence Day & Emerald Diamond Sphere",
+    category: "National & Civic",
+    demand: "Tinggi",
+    desc: "Hari kemerdekaan Brasil; banyak dipakai oleh perbankan, e-commerce, dan media di Amerika Selatan.",
+    promptTheme:
+      "Faceted Emerald Diamond Rhombus & Golden Orbital Sphere (Konstruksi belah ketupat zamrud 3D mengelilingi bola kristal emas dan biru langit)",
+    recommendedStyle: "swiss-kinetic",
+    recommendedPalette: "emerald-mint",
+    keywords: ["brazil independence", "7 de setembro", "emerald diamond", "golden sphere", "south america"],
+  },
+  {
+    id: "oct-ca-thanksgiving",
+    month: 10,
+    dateLabel: "Senin ke-2 Oktober",
+    country: "ca",
+    title: "Canadian Thanksgiving & Autumn Amber Harvest",
+    category: "Cultural & Holiday",
+    demand: "Tinggi",
+    desc: "Thanksgiving Kanada jatuh di bulan Oktober (1 bulan lebih awal dari AS), menjadi pembuka musim belanja Q4 di Amerika Utara.",
+    promptTheme:
+      "Amber Maple Glass Layers & Warm Harvest Gold Streamlines (Lempengan kaca warna amber musim gugur dengan aliran garis cahaya emas yang hangat)",
+    recommendedStyle: "frosted-glass",
+    recommendedPalette: "obsidian-gold",
+    keywords: ["canadian thanksgiving", "october autumn", "amber maple", "harvest gold", "fall retail"],
   },
 ];

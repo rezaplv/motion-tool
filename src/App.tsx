@@ -696,17 +696,20 @@ export default function App() {
       <EventRadarModal
         open={eventRadarOpen}
         onClose={() => setEventRadarOpen(false)}
+        config={config}
+        onOpenBulkZip={() => setBulkOpen(true)}
         onToast={showToast}
         onSelectEventForStudio={(preset) => {
           setStudioPreset(preset);
           setEventRadarOpen(false);
-          if (engineMode !== "canvas") {
-            setEngineMode("canvas");
+          const target = preset.targetMode ?? "canvas";
+          if (engineMode !== target) {
+            setEngineMode(target);
           }
           setPromptOpen(true);
           showToast(
             "success",
-            `Tema "${preset.eventTitle}" diterapkan ke Studio Master Prompt!`
+            `Tema "${preset.eventTitle}" diterapkan ke Prompt AI (${target === "svg" ? "SVG Motion" : "Studio Master"})!`
           );
         }}
       />
@@ -728,6 +731,7 @@ export default function App() {
           config={config}
           onApplyConfig={applyConfigFromPrompt}
           onToast={showToast}
+          externalStudioPreset={studioPreset}
         />
       )}
 

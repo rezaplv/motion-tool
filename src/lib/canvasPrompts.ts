@@ -480,3 +480,61 @@ export function buildStudioMasterPrompt(p: StudioMasterParams): string {
     SAFE_MODE: MICROSTOCK_SAFE_RULES,
   });
 }
+
+export interface BatchStudioEventItem {
+  title: string;
+  countryLabel: string;
+  dateLabel: string;
+  tema: string;
+  styleAnchor: string;
+  paletteId: string;
+}
+
+export function buildBatchStudioEventsPrompt(params: {
+  items: BatchStudioEventItem[];
+  durasi: number;
+  rasio: string;
+  resolusi: string;
+  width: number;
+  height: number;
+}): string {
+  const d = Math.max(1, Math.round(params.durasi * 100) / 100);
+  const itemSpecs = params.items
+    .map((item, idx) => {
+      const anchor =
+        STUDIO_STYLE_ANCHORS.find((a) => a.id === item.styleAnchor) ??
+        STUDIO_STYLE_ANCHORS[0];
+      const palette =
+        STUDIO_HEX_PALETTES.find((pal) => pal.id === item.paletteId) ??
+        STUDIO_HEX_PALETTES[0];
+      return `KODE #${idx + 1} — EVENT: ${item.title} (${item.countryLabel} • ${item.dateLabel})
+- TEMA VISUAL: ${item.tema}
+- STYLE ANCHOR: ${anchor.label}
+- PALET HEX WAJIB: ${palette.colors.join(", ")}`;
+    })
+    .join("\n\n");
+
+  return `Kamu adalah Lead Creative Technologist dan Senior Motion Designer di studio motion graphic kelas dunia (standar Buck, ManvsMachine, Ordinary Folk).
+Tugasmu adalah membuat ${params.items.length} KODE ANIMASI CANVAS 2D BERBEDA untuk paket rilis Microstock Event Global (Shutterstock Select / Adobe Stock).
+
+SPESIFIKASI GLOBAL:
+- JUMLAH VIDEO: ${params.items.length} kode animasi lengkap dan mandiri.
+- RASIO & TARGET RESOLUSI: ${params.rasio} (${params.resolusi} — ${params.width}x${params.height} px)
+- DURASI: ${d} detik seamless loop sempurna per video (const t = time % ${d}; const p = t / ${d};).
+
+DAFTAR ${params.items.length} EVENT YANG WAJIB DIBUAT SECARA BERURUTAN:
+
+${itemSpecs}
+
+ATURAN ANTI-SIMILARITY ANTAR KODE (MUTLAK DIPATUHI):
+1. Setiap kode (#1 s/d #${params.items.length}) WAJIB memiliki konstruksi geometri utama yang BERBEDA TOTAL satu sama lain (misal: kode 1 memakai proyeksi Isometrik toIso(x,y,z), kode 2 memakai Jalinan Pita Bezier 3D, kode 3 memakai Lempengan Kaca Frosted Berlapis, dst.).
+2. DILARANG KERAS membuat lingkaran cincin klise, garis dashed orbit berputar, atau bola yang mengitari pusat.
+3. Setiap kode wajib memiliki fungsi mandiri: function draw(ctx, time, width, height, assets) { ... }
+4. Gunakan proporsi responsif: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height); dengan margin aman minimal 18% dari tepi kanvas.
+${MICROSTOCK_SAFE_RULES}
+FORMAT OUTPUT WAJIB UNTUK BULK RENDER ZIP:
+- Gabungkan seluruh ${params.items.length} kode di dalam SATU blok kode JavaScript.
+- WAJIB pisahkan antara kode yang satu dengan kode berikutnya menggunakan baris pemisah persis:
+// ====
+- Jangan menulis penjelasan teks di luar blok kode agar langsung bisa ditempel ke fitur Bulk Render ZIP.`;
+}

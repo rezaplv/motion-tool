@@ -1,17 +1,25 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Calendar,
+  CheckSquare,
   Copy,
+  Download,
   Flame,
   Globe,
+  Package,
   Plus,
   Search,
   Sparkles,
+  Square,
   Tag,
   Trash2,
   TrendingUp,
+  Upload,
   X,
 } from "lucide-react";
+import type { EngineMode, VideoConfig } from "../types";
+import { RESOLUTION_PRESETS } from "../types";
+import { getOutputDimensions } from "../lib/dimensions";
 import {
   CALENDAR_EVENTS,
   COUNTRIES,
@@ -22,7 +30,11 @@ import {
   type DemandLevel,
   type EventCategory,
 } from "../lib/eventCalendar";
-import { STUDIO_HEX_PALETTES, STUDIO_STYLE_ANCHORS } from "../lib/canvasPrompts";
+import {
+  buildBatchStudioEventsPrompt,
+  STUDIO_HEX_PALETTES,
+  STUDIO_STYLE_ANCHORS,
+} from "../lib/canvasPrompts";
 import { usePersistentState } from "../lib/usePersistentState";
 
 export interface StudioEventPreset {
@@ -30,13 +42,16 @@ export interface StudioEventPreset {
   styleAnchor: string;
   paletteId: string;
   eventTitle: string;
+  targetMode?: EngineMode;
   ts: number;
 }
 
 interface EventRadarModalProps {
   open: boolean;
   onClose: () => void;
+  config: VideoConfig;
   onSelectEventForStudio: (preset: StudioEventPreset) => void;
+  onOpenBulkZip: () => void;
   onToast: (type: "info" | "success" | "warning" | "error", message: string) => void;
 }
 
@@ -52,22 +67,48 @@ const CATEGORIES: ("ALL" | EventCategory)[] = [
   "Tech & Corporate",
 ];
 
+async function copyClipboardText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch {
+      ok = false;
+    }
+    ta.remove();
+    return ok;
+  }
+}
+
 export function EventRadarModal({
   open,
   onClose,
+  config,
   onSelectEventForStudio,
+  onOpenBulkZip,
   onToast,
 }: EventRadarModalProps) {
   const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
   const goldenMonth1 = (currentMonth % 12) + 1;
   const goldenMonth2 = ((currentMonth + 1) % 12) + 1;
 
-  // Default buka langsung ke filter "golden" (1-2 bulan ke depan) atau bulan pilihan
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>("all");
   const [monthFilter, setMonthFilter] = useState<number | "all" | "golden">("golden");
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | EventCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // State Multi-Select untuk Batch Prompt (// ====)
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Custom events yang disimpan di browser user
   const [customEvents, setCustomEvents] = usePersistentState<CalendarEventItem[]>(
@@ -119,6 +160,11 @@ export function EventRadarModal({
     });
   }, [allEvents, selectedCountry, monthFilter, categoryFilter, searchQuery, currentMonth]);
 
+  const selectedEventsList = useMemo(
+    () => allEvents.filter((ev) => selectedIds.includes(ev.id)),
+    [allEvents, selectedIds]
+  );
+
   const activeCountryObj = useMemo(
     () => COUNTRIES.find((c) => c.id === selectedCountry) ?? COUNTRIES[0],
     [selectedCountry]
@@ -126,12 +172,76 @@ export function EventRadarModal({
 
   if (!open) return null;
 
+  const toggleSelectEvent = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllFiltered = () => {
+    const ids = filteredEvents.slice(0, 10).map((e) => e.id);
+    setSelectedIds(ids);
+    onToast(
+      "info",
+      `${ids.length} event dipilih untuk Paket Batch Prompt (maks. 10 sekaligus agar kode AI tetap utuh).`
+    );
+  };
+
+  const handleCopyBatchPrompt = async () => {
+    if (selectedEventsList.length === 0) return;
+    const dims = getOutputDimensions(config);
+    const resLabel = RESOLUTION_PRESETS[config.resolution].shortLabel;
+
+    const batchPrompt = buildBatchStudioEventsPrompt({
+      items: selectedEventsList.map((ev) => {
+        const cInfo = COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+        return {
+          title: ev.title,
+          countryLabel: `${cInfo.flag} ${cInfo.label}`,
+          dateLabel: `${MONTH_NAMES[ev.month - 1].full} (${ev.dateLabel})`,
+          tema: ev.promptTheme,
+          styleAnchor: ev.recommendedStyle,
+          paletteId: ev.recommendedPalette,
+        };
+      }),
+      durasi: config.duration,
+      rasio: config.aspectRatio,
+      resolusi: resLabel,
+      width: dims.width,
+      height: dims.height,
+    });
+
+    const ok = await copyClipboardText(batchPrompt);
+    if (ok) {
+      onToast(
+        "success",
+        `Batch Prompt (${selectedEventsList.length} Event dengan pemisah // ====) berhasil disalin! Tempel ke AI lalu masukkan hasilnya ke Bulk Render ZIP.`
+      );
+    } else {
+      onToast("error", "Gagal menyalin Batch Prompt.");
+    }
+  };
+
+  const handleCopyBatchKeywords = async () => {
+    const uniqueKw = Array.from(
+      new Set(selectedEventsList.flatMap((ev) => ev.keywords))
+    );
+    const text = uniqueKw.join(", ");
+    const ok = await copyClipboardText(text);
+    if (ok) {
+      onToast(
+        "success",
+        `${uniqueKw.length} Keywords gabungan disalin ke clipboard!`
+      );
+    }
+  };
+
   const handleCopyKeywords = async (keywords: string[], title: string) => {
     const text = keywords.join(", ");
-    try {
-      await navigator.clipboard.writeText(text);
+    const ok = await copyClipboardText(text);
+    if (ok) {
       onToast("success", `Keywords "${title}" disalin: ${text}`);
-    } catch {
+    } else {
       onToast("warning", "Gagal menyalin keywords ke clipboard.");
     }
   };
@@ -174,7 +284,68 @@ export function EventRadarModal({
 
   const handleDeleteCustom = (id: string, title: string) => {
     setCustomEvents((prev) => prev.filter((item) => item.id !== id));
+    setSelectedIds((prev) => prev.filter((item) => item !== id));
     onToast("info", `Event custom "${title}" dihapus.`);
+  };
+
+  const handleExportCustomJson = () => {
+    if (customEvents.length === 0) {
+      onToast("warning", "Belum ada event custom untuk di-export.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(customEvents, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `zae-motion-custom-events-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onToast("success", `${customEvents.length} Event Custom berhasil di-export ke JSON!`);
+  };
+
+  const handleImportCustomJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        if (!Array.isArray(parsed)) throw new Error("Format bukan array");
+        const validItems: CalendarEventItem[] = parsed
+          .filter(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              typeof item.title === "string" &&
+              typeof item.promptTheme === "string" &&
+              typeof item.month === "number"
+          )
+          .map((item, idx) => ({
+            ...item,
+            id: item.id || `custom-import-${Date.now()}-${idx}`,
+            isCustom: true,
+          }));
+        if (validItems.length === 0) {
+          onToast("error", "File JSON tidak berisi data event yang valid.");
+          return;
+        }
+        setCustomEvents((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const merged = [
+            ...validItems.filter((v) => !existingIds.has(v.id)),
+            ...prev,
+          ];
+          return merged;
+        });
+        onToast("success", `${validItems.length} Event Custom berhasil di-import!`);
+      } catch {
+        onToast("error", "Gagal membaca file JSON Event Custom.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   return (
@@ -190,7 +361,7 @@ export function EventRadarModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-amber-500/10">
+        <div className="px-5 py-3.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-amber-500/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center text-black shadow-lg shadow-cyan-500/20">
               <Calendar className="w-5 h-5 text-white" />
@@ -201,20 +372,47 @@ export function EventRadarModal({
                   Global Event Radar
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                  Microstock Edition
+                  15 Negara & Wilayah • 12 Bulan
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5">
-                Riset kalender event dunia per negara & bulan + 1-Klik injeksi tema Anti-Similarity ke Studio Master
+                Pilih Negara & Bulan ➔ Klik <strong className="text-amber-300">Studio Master</strong> untuk 1 video, atau <strong className="text-purple-300">Centang Beberapa Event</strong> untuk Batch Prompt <code className="text-cyan-300">// ====</code> (Bulk ZIP)
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportCustomJson}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Import Event Custom dari file JSON"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 text-[9.5px] font-bold uppercase tracking-wider"
+            >
+              <Upload className="w-3 h-3 text-cyan-400" />
+              Import
+            </button>
+            {customEvents.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExportCustomJson}
+                title="Backup / Export Event Custom ke file JSON"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 text-[9.5px] font-bold uppercase tracking-wider"
+              >
+                <Download className="w-3 h-3 text-emerald-400" />
+                Export ({customEvents.length})
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowAddForm((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               {showAddForm ? "Tutup Form" : "+ Event Baru"}
@@ -231,7 +429,7 @@ export function EventRadarModal({
         </div>
 
         {/* Golden Upload Window Insight Banner */}
-        <div className="px-5 py-2.5 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-2">
+        <div className="px-5 py-2 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-[11px] text-amber-200">
             <Flame className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
             <span>
@@ -247,20 +445,22 @@ export function EventRadarModal({
               (1–2 bulan sebelum hari-H).
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setMonthFilter("golden");
-              setSelectedCountry("all");
-            }}
-            className={`px-3 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all ${
-              monthFilter === "golden"
-                ? "bg-amber-400 text-black shadow"
-                : "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
-            }`}
-          >
-            🔥 Lihat Target Upload Sekarang
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setMonthFilter("golden");
+                setSelectedCountry("all");
+              }}
+              className={`px-3 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all ${
+                monthFilter === "golden"
+                  ? "bg-amber-400 text-black shadow"
+                  : "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+              }`}
+            >
+              🔥 Lihat Target Upload Sekarang
+            </button>
+          </div>
         </div>
 
         {/* Form Tambah Event Custom (Collapsible) */}
@@ -268,7 +468,7 @@ export function EventRadarModal({
           <div className="p-4 bg-[#0d1322] border-b border-emerald-500/30 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
-                ✨ Tambah Event Custom ke Kalender (Tersimpan Otomatis di Browser)
+                ✨ Tambah Event Custom ke Kalender (Tersimpan Otomatis & Bisa Di-Export JSON)
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -466,7 +666,7 @@ export function EventRadarModal({
             })}
           </div>
 
-          {/* Baris 3: Search + Kategori + Info Pasar Negara */}
+          {/* Baris 3: Search + Kategori + Batch Selection Controls */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
             <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[240px]">
               <div className="relative flex-1 max-w-xs">
@@ -475,7 +675,7 @@ export function EventRadarModal({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari event, tema, atau keyword..."
+                  placeholder="Cari event, negara, tema, atau keyword..."
                   className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/50 border border-white/10 focus:border-cyan-400 outline-none text-xs text-white"
                 />
               </div>
@@ -492,14 +692,34 @@ export function EventRadarModal({
                   </option>
                 ))}
               </select>
+              {filteredEvents.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAllFiltered}
+                  className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                  title="Pilih otomatis hingga 10 event di tampilan ini untuk dibuatkan Batch Prompt sekaligus"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Pilih Paket ({Math.min(10, filteredEvents.length)})
+                </button>
+              )}
+              {selectedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  className="px-2.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase"
+                >
+                  Reset ({selectedIds.length})
+                </button>
+              )}
             </div>
 
             <div className="text-[10px] text-zinc-400 flex items-center gap-1.5">
               <span>{activeCountryObj.flag}</span>
-              <span className="text-zinc-300 font-semibold">
+              <span className="text-zinc-300 font-semibold hidden sm:inline">
                 {activeCountryObj.marketNote}
               </span>
-              <span className="ml-2 px-2 py-0.5 rounded-md bg-white/5 text-cyan-300 font-black">
+              <span className="ml-1 px-2 py-0.5 rounded-md bg-white/5 text-cyan-300 font-black">
                 {filteredEvents.length} Event
               </span>
             </div>
@@ -542,16 +762,38 @@ export function EventRadarModal({
                 const paletteObj = STUDIO_HEX_PALETTES.find(
                   (p) => p.id === ev.recommendedPalette
                 );
+                const isSelected = selectedIds.includes(ev.id);
 
                 return (
                   <div
                     key={ev.id}
-                    className="rounded-2xl bg-[#0e1422] border border-white/10 hover:border-cyan-500/40 p-4 flex flex-col justify-between gap-3 transition-all shadow-lg"
+                    className={`rounded-2xl bg-[#0e1422] border p-4 flex flex-col justify-between gap-3 transition-all shadow-lg ${
+                      isSelected
+                        ? "border-purple-400 ring-1 ring-purple-500/40 bg-purple-950/10"
+                        : "border-white/10 hover:border-cyan-500/40"
+                    }`}
                   >
                     <div className="space-y-2.5">
                       {/* Top Badges */}
                       <div className="flex flex-wrap items-center justify-between gap-1.5">
                         <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleSelectEvent(ev.id)}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black border transition-all ${
+                              isSelected
+                                ? "bg-purple-600 text-white border-purple-400"
+                                : "bg-white/5 text-zinc-400 border-white/10 hover:text-white"
+                            }`}
+                            title="Centang untuk digabung ke Batch Prompt (Multi-Kode // ====)"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-3 h-3" />
+                            ) : (
+                              <Square className="w-3 h-3" />
+                            )}
+                            <span>{isSelected ? "Terpilih" : "Batch"}</span>
+                          </button>
                           <span className="px-2.5 py-0.5 rounded-lg bg-white/10 text-white text-[10px] font-black flex items-center gap-1">
                             <span>{countryInfo.flag}</span>
                             <span>{countryInfo.label}</span>
@@ -638,11 +880,11 @@ export function EventRadarModal({
                       </div>
                     </div>
 
-                    {/* Footer: Keywords & 1-Click Action */}
+                    {/* Footer: Keywords & Action Buttons */}
                     <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1">
                         <Tag className="w-3 h-3 text-zinc-500 mr-0.5" />
-                        {ev.keywords.slice(0, 4).map((kw) => (
+                        {ev.keywords.slice(0, 3).map((kw) => (
                           <span
                             key={kw}
                             className="px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 text-[9px]"
@@ -656,31 +898,51 @@ export function EventRadarModal({
                             onClick={() =>
                               handleCopyKeywords(ev.keywords, ev.title)
                             }
-                            className="ml-1 px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-zinc-300 text-[9px] font-bold flex items-center gap-1"
+                            className="ml-0.5 px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-zinc-300 text-[9px] font-bold flex items-center gap-1"
                             title="Salin semua keyword bahasa Inggris untuk metadata microstock"
                           >
                             <Copy className="w-2.5 h-2.5" />
-                            Salin Tag
+                            Tag
                           </button>
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onSelectEventForStudio({
-                            tema: ev.promptTheme,
-                            styleAnchor: ev.recommendedStyle,
-                            paletteId: ev.recommendedPalette,
-                            eventTitle: ev.title,
-                            ts: Date.now(),
-                          })
-                        }
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[10px] font-black uppercase tracking-wider shadow-md shadow-amber-950/50 transition-all"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Buat Prompt Studio Master
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSelectEventForStudio({
+                              tema: ev.promptTheme,
+                              styleAnchor: ev.recommendedStyle,
+                              paletteId: ev.recommendedPalette,
+                              eventTitle: ev.title,
+                              targetMode: "svg",
+                              ts: Date.now(),
+                            })
+                          }
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[9.5px] font-black uppercase tracking-wider transition-all"
+                          title="Kirim tema event ini ke Prompt AI mode SVG Motion"
+                        >
+                          SVG
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSelectEventForStudio({
+                              tema: ev.promptTheme,
+                              styleAnchor: ev.recommendedStyle,
+                              paletteId: ev.recommendedPalette,
+                              eventTitle: ev.title,
+                              targetMode: "canvas",
+                              ts: Date.now(),
+                            })
+                          }
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[9.5px] font-black uppercase tracking-wider shadow-md shadow-amber-950/50 transition-all"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Studio Master
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -688,6 +950,50 @@ export function EventRadarModal({
             </div>
           )}
         </div>
+
+        {/* Floating Batch Action Bar (Muncul saat user mencentang >= 1 event) */}
+        {selectedEventsList.length > 0 && (
+          <div className="px-5 py-3 bg-gradient-to-r from-purple-950 via-[#15102a] to-indigo-950 border-t border-purple-400/40 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-1 rounded-xl bg-purple-500 text-white text-xs font-black">
+                {selectedEventsList.length} Event Terpilih
+              </span>
+              <div className="text-[11px] text-purple-200 max-w-md truncate">
+                {selectedEventsList.map((e) => e.title).join(" • ")}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyBatchKeywords}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[10px] font-bold uppercase tracking-wider"
+              >
+                <Tag className="w-3.5 h-3.5 text-cyan-300" />
+                Salin Semua Tag
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyBatchPrompt}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[10px] font-black uppercase tracking-wider shadow-lg"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                1. Salin Batch Prompt ( Pemisah // ==== )
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenBulkZip();
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-wider shadow-lg"
+              >
+                <Package className="w-3.5 h-3.5" />
+                2. Buka Bulk Render ZIP
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -120,6 +120,12 @@ interface SvgPromptModalProps {
   config: VideoConfig;
   onApplyConfig: (patch: Partial<VideoConfig>) => boolean;
   onToast: (type: ToastType, message: string) => void;
+  externalStudioPreset?: {
+    tema: string;
+    styleAnchor: string;
+    paletteId: string;
+    ts: number;
+  } | null;
 }
 
 const sectionTitle = "text-[11px] font-black uppercase tracking-wider text-emerald-400";
@@ -150,7 +156,14 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function SvgPromptModal({ open, onClose, config, onApplyConfig, onToast }: SvgPromptModalProps) {
+export function SvgPromptModal({
+  open,
+  onClose,
+  config,
+  onApplyConfig,
+  onToast,
+  externalStudioPreset,
+}: SvgPromptModalProps) {
   const [form, setForm] = usePersistentState<FormState>("svgPromptForm", DEFAULT_FORM, isForm);
   const temaRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLTextAreaElement>(null);
@@ -166,6 +179,17 @@ export function SvgPromptModal({ open, onClose, config, onApplyConfig, onToast }
     setTemaError(false);
     setForm((f) => ({ ...f, tab: next }));
   };
+
+  useEffect(() => {
+    if (!externalStudioPreset) return;
+    setForm((f) => ({
+      ...f,
+      t: { ...DEFAULT_FORM.t, ...f.t, tema: externalStudioPreset.tema },
+      s: { ...DEFAULT_FORM.s, ...f.s, tema: externalStudioPreset.tema },
+    }));
+    setTemaError(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalStudioPreset?.ts]);
 
   useEffect(() => {
     if (!open) return;
