@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  BrainCircuit,
   Calendar,
   CheckSquare,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Copy,
   Download,
@@ -47,6 +50,8 @@ import {
 } from "../lib/holidaySync";
 import {
   buildBatchStudioEventsPrompt,
+  buildEventResearchPrompt,
+  buildMonthlyResearchPrompt,
   STUDIO_HEX_PALETTES,
   STUDIO_STYLE_ANCHORS,
 } from "../lib/canvasPrompts";
@@ -74,6 +79,7 @@ interface ResolvedCalendarEvent extends CalendarEventItem {
   resolvedDate: Date | null;
   daysLeft: number | null;
   exactDateStr: string | null;
+  shortDateBadge: string;
 }
 
 const isCustomEventsArray = (v: unknown): v is CalendarEventItem[] =>
@@ -86,6 +92,21 @@ const CATEGORIES: ("ALL" | EventCategory)[] = [
   "Seasonal & Nature",
   "National & Civic",
   "Tech & Corporate",
+];
+
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 async function copyClipboardText(text: string): Promise<boolean> {
@@ -127,6 +148,7 @@ export function EventRadarModal({
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | EventCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [expandedIdeaIds, setExpandedIdeaIds] = useState<string[]>([]);
 
   // State Multi-Select untuk Batch Prompt (// ====)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -171,7 +193,7 @@ export function EventRadarModal({
         if (active) setLiveCache(fresh);
       })
       .catch(() => {
-        /* Tetap jalan dengan 110+ event bawaan + mesin tanggal otomatis */
+        /* Tetap jalan dengan 118+ event bawaan + mesin tanggal otomatis */
       })
       .finally(() => {
         if (active) setSyncingLive(false);
@@ -209,12 +231,16 @@ export function EventRadarModal({
       const dt = ev.rule ? nextOccurrence(ev.rule, now) : null;
       curatedDateMap.set(ev.id, dt);
       const dynamicMonth = dt ? dt.getUTCMonth() + 1 : ev.month;
+      const shortDateBadge = dt
+        ? `${dt.getUTCDate()} ${SHORT_MONTHS[dt.getUTCMonth()]}`
+        : `${SHORT_MONTHS[dynamicMonth - 1]}`;
       return {
         ...ev,
         month: dynamicMonth,
         resolvedDate: dt,
         daysLeft: dt ? daysUntil(dt, now) : null,
         exactDateStr: dt ? formatDateId(dt) : null,
+        shortDateBadge,
       };
     });
 
@@ -225,11 +251,15 @@ export function EventRadarModal({
       now
     ).map<ResolvedCalendarEvent>((ev) => {
       const dt = ev.isoDate ? parseIsoDate(ev.isoDate) : null;
+      const shortDateBadge = dt
+        ? `${dt.getUTCDate()} ${SHORT_MONTHS[dt.getUTCMonth()]}`
+        : `${SHORT_MONTHS[ev.month - 1]}`;
       return {
         ...ev,
         resolvedDate: dt,
         daysLeft: dt ? daysUntil(dt, now) : null,
         exactDateStr: dt ? formatDateId(dt) : ev.dateLabel,
+        shortDateBadge,
       };
     });
 
@@ -239,6 +269,7 @@ export function EventRadarModal({
       resolvedDate: null,
       daysLeft: null,
       exactDateStr: null,
+      shortDateBadge: SHORT_MONTHS[ev.month - 1],
     }));
 
     return [...resolvedCustom, ...resolvedCurated, ...liveItems].sort((a, b) => {
@@ -292,13 +323,102 @@ export function EventRadarModal({
     );
   };
 
+  const toggleExpandIdea = (id: string) => {
+    setExpandedIdeaIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   const handleSelectAllFiltered = () => {
     const ids = filteredEvents.slice(0, 10).map((e) => e.id);
     setSelectedIds(ids);
     onToast(
       "info",
-      `${ids.length} event dipilih untuk Paket Batch Prompt (maks. 10 sekaligus agar kode AI tetap utuh).`
+      `${ids.length} event dipilih untuk Paket Riset / Batch Prompt.`
     );
+  };
+
+  // 1-Klik Salin Prompt Riset Mendalam untuk 1 Event (Ide User!)
+  const handleCopySingleResearchPrompt = async (ev: ResolvedCalendarEvent) => {
+    const dims = getOutputDimensions(config);
+    const resLabel = RESOLUTION_PRESETS[config.resolution].shortLabel;
+    const countryInfo = COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+    const monthInfo = MONTH_NAMES[ev.month - 1];
+
+    const prompt = buildEventResearchPrompt({
+      title: ev.title,
+      countryLabel: `${countryInfo.flag} ${countryInfo.label}`,
+      monthLabel: monthInfo.full,
+      dateLabel: ev.exactDateStr ?? ev.dateLabel,
+      category: ev.category,
+      durasi: config.duration,
+      rasio: config.aspectRatio,
+      resolusi: resLabel,
+      width: dims.width,
+      height: dims.height,
+    });
+
+    const ok = await copyClipboardText(prompt);
+    if (ok) {
+      onToast(
+        "success",
+        `🔍 Prompt Riset AI untuk "${ev.title}" disalin! Tempel ke ChatGPT/Claude/Gemini untuk mendapatkan riset terbaik + 3 kode siap render.`
+      );
+    } else {
+      onToast("error", "Gagal menyalin Prompt Riset AI.");
+    }
+  };
+
+  // 1-Klik Salin Prompt Riset 1 Bulan / Paket Filter Saat Ini
+  const handleCopyMonthlyResearchPrompt = async (
+    customList?: ResolvedCalendarEvent[]
+  ) => {
+    const sourceList =
+      customList && customList.length > 0
+        ? customList
+        : filteredEvents.slice(0, 15);
+    if (sourceList.length === 0) {
+      onToast("warning", "Tidak ada event pada filter saat ini untuk diriset.");
+      return;
+    }
+
+    const dims = getOutputDimensions(config);
+    const resLabel = RESOLUTION_PRESETS[config.resolution].shortLabel;
+    const monthLabel =
+      monthFilter === "golden"
+        ? `Golden Upload Window (${MONTH_NAMES[goldenMonth1 - 1].full} & ${MONTH_NAMES[goldenMonth2 - 1].full})`
+        : monthFilter === "all"
+        ? "12 Bulan Penuh"
+        : MONTH_NAMES[monthFilter - 1].full;
+
+    const prompt = buildMonthlyResearchPrompt({
+      countryFilterLabel: `${activeCountryObj.flag} ${activeCountryObj.label}`,
+      monthFilterLabel: monthLabel,
+      events: sourceList.map((ev) => {
+        const cInfo = COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
+        return {
+          title: ev.title,
+          countryLabel: `${cInfo.flag} ${cInfo.label}`,
+          dateLabel: ev.exactDateStr ?? `${ev.shortDateBadge} (${ev.dateLabel})`,
+          category: ev.category,
+        };
+      }),
+      durasi: config.duration,
+      rasio: config.aspectRatio,
+      resolusi: resLabel,
+      width: dims.width,
+      height: dims.height,
+    });
+
+    const ok = await copyClipboardText(prompt);
+    if (ok) {
+      onToast(
+        "success",
+        `🧠 Prompt Riset Paket (${sourceList.length} Event) disalin! Tempel ke AI untuk riset potensi cuan tertinggi + kode Batch // ====.`
+      );
+    } else {
+      onToast("error", "Gagal menyalin Prompt Riset Bulan Ini.");
+    }
   };
 
   const handleCopyBatchPrompt = async () => {
@@ -361,22 +481,25 @@ export function EventRadarModal({
   };
 
   const handleAddCustomEvent = () => {
-    if (!newTitle.trim() || !newPromptTheme.trim()) {
-      onToast("warning", "Nama Event dan Tema Visual Studio wajib diisi!");
+    if (!newTitle.trim()) {
+      onToast("warning", "Nama Event wajib diisi!");
       return;
     }
+    const cleanTitle = newTitle.trim();
     const item: CalendarEventItem = {
       id: `custom-${Date.now()}`,
       month: newMonth,
       dateLabel: newDateLabel.trim() || MONTH_NAMES[newMonth - 1].full,
       country: newCountry,
-      title: newTitle.trim(),
+      title: cleanTitle,
       category: newCategory,
       demand: newDemand,
       desc:
         newDesc.trim() ||
-        "Event custom yang ditambahkan untuk target produksi microstock.",
-      promptTheme: newPromptTheme.trim(),
+        "Event custom yang ditambahkan untuk target riset & produksi microstock.",
+      promptTheme:
+        newPromptTheme.trim() ||
+        `Isometric 3D ${cleanTitle} Commemorative Monolith & Kinetic Light Matrix`,
       recommendedStyle: newStyle,
       recommendedPalette: newPalette,
       keywords: newKeywords
@@ -433,11 +556,13 @@ export function EventRadarModal({
               item &&
               typeof item === "object" &&
               typeof item.title === "string" &&
-              typeof item.promptTheme === "string" &&
               typeof item.month === "number"
           )
           .map((item, idx) => ({
             ...item,
+            promptTheme:
+              item.promptTheme ||
+              `Isometric 3D ${item.title} Monolith & Kinetic Light Matrix`,
             id: item.id || `custom-import-${Date.now()}-${idx}`,
             isCustom: true,
           }));
@@ -483,10 +608,10 @@ export function EventRadarModal({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
-                  Global Event Radar
+                  Global Event Radar — Holidays & Observances
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                  {allEvents.length} Event Aktif • Auto-Update Tiap Tahun
+                  {allEvents.length} Event • Ala TimeAndDate
                 </span>
                 {liveCache && (
                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
@@ -495,7 +620,7 @@ export function EventRadarModal({
                 )}
               </div>
               <p className="text-[10px] text-zinc-400 mt-0.5">
-                Tanggal bergeser otomatis setiap tahun (Masehi, Paskah, Hijriah, Imlek, & Live API) ➔ Klik <strong className="text-amber-300">Studio Master</strong> atau <strong className="text-purple-300">Batch // ====</strong>
+                Pilih Negara & Bulan ➔ Klik <strong className="text-cyan-300">🔍 Prompt Riset AI</strong> untuk mencari konsep terbaik di AI, atau <strong className="text-amber-300">⚡ Studio Master</strong> untuk eksekusi cepat
               </p>
             </div>
           </div>
@@ -559,24 +684,33 @@ export function EventRadarModal({
           </div>
         </div>
 
-        {/* Golden Upload Window Insight Banner */}
-        <div className="px-5 py-2 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-2">
+        {/* Golden Upload Window Insight Banner + Tombol Riset 1 Bulan */}
+        <div className="px-5 py-2 bg-gradient-to-r from-amber-500/15 via-indigo-500/10 to-cyan-500/10 border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-[11px] text-amber-200">
             <Flame className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
             <span>
-              <strong>Golden Upload Window Saat Ini:</strong> Bulan sekarang{" "}
+              <strong>Golden Upload Window:</strong> Bulan sekarang{" "}
               <strong className="text-white underline">
                 {MONTH_NAMES[currentMonth - 1].full}
               </strong>{" "}
-              — Waktu paling ideal untuk mulai buat & upload video untuk event bulan{" "}
+              ➔ Target upload terbaik adalah event bulan{" "}
               <strong className="text-amber-300">
                 {MONTH_NAMES[goldenMonth1 - 1].full} &{" "}
                 {MONTH_NAMES[goldenMonth2 - 1].full}
               </strong>{" "}
-              (1–2 bulan sebelum hari-H).
+              ({config.resolution} • {config.aspectRatio} • {config.duration}s).
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleCopyMonthlyResearchPrompt()}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-400 to-indigo-500 hover:from-cyan-300 hover:to-indigo-400 text-black text-[9.5px] font-black uppercase tracking-wider shadow"
+              title="Salin 1 Prompt Riset yang merangkum seluruh daftar event pada bulan/negara ini untuk dianalisis AI"
+            >
+              <BrainCircuit className="w-3.5 h-3.5" />
+              🧠 Salin Prompt Riset Bulan/Filter Ini ({Math.min(15, filteredEvents.length)} Event)
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -589,7 +723,7 @@ export function EventRadarModal({
                   : "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
               }`}
             >
-              🔥 Lihat Target Upload Sekarang
+              🔥 Target Upload
             </button>
           </div>
         </div>
@@ -599,7 +733,7 @@ export function EventRadarModal({
           <div className="p-4 bg-[#0d1322] border-b border-emerald-500/30 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
-                ✨ Tambah Event Custom ke Kalender (Tersimpan Otomatis & Bisa Di-Export JSON)
+                ✨ Tambah Event / Hari Libur Baru ke Kalender
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -638,7 +772,7 @@ export function EventRadarModal({
                 type="text"
                 value={newDateLabel}
                 onChange={(e) => setNewDateLabel(e.target.value)}
-                placeholder="Tanggal (mis. 12 Desember)"
+                placeholder="Tanggal (mis. 12 Des)"
                 className="px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
               />
             </div>
@@ -647,14 +781,14 @@ export function EventRadarModal({
                 type="text"
                 value={newPromptTheme}
                 onChange={(e) => setNewPromptTheme(e.target.value)}
-                placeholder="Tema Visual Studio (mis. Isometric 3D Neon Shopping Portal & Gold Podium)"
+                placeholder="Tema Visual (opsional — boleh dikosongkan jika mau diriset AI)"
                 className="sm:col-span-2 px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
               />
               <input
                 type="text"
                 value={newKeywords}
                 onChange={(e) => setNewKeywords(e.target.value)}
-                placeholder="Keywords dipisah koma (mis. sale, podium, luxury)"
+                placeholder="Keywords dipisah koma (opsional)"
                 className="px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
               />
             </div>
@@ -806,7 +940,7 @@ export function EventRadarModal({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari event, negara, tema, atau keyword..."
+                  placeholder="Cari nama hari libur, negara, atau tanggal..."
                   className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/50 border border-white/10 focus:border-cyan-400 outline-none text-xs text-white"
                 />
               </div>
@@ -819,7 +953,7 @@ export function EventRadarModal({
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat} className="bg-[#090d16]">
-                    {cat === "ALL" ? "Semua Kategori" : cat}
+                    {cat === "ALL" ? "Semua Tipe Libur" : cat}
                   </option>
                 ))}
               </select>
@@ -828,7 +962,7 @@ export function EventRadarModal({
                   type="button"
                   onClick={handleSelectAllFiltered}
                   className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
-                  title="Pilih otomatis hingga 10 event di tampilan ini untuk dibuatkan Batch Prompt sekaligus"
+                  title="Pilih otomatis hingga 10 event di tampilan ini untuk diriset atau dibuatkan Batch Prompt sekaligus"
                 >
                   <CheckSquare className="w-3.5 h-3.5" />
                   Pilih Paket ({Math.min(10, filteredEvents.length)})
@@ -851,13 +985,13 @@ export function EventRadarModal({
                 {activeCountryObj.marketNote}
               </span>
               <span className="ml-1 px-2 py-0.5 rounded-md bg-white/5 text-cyan-300 font-black">
-                {filteredEvents.length} Event
+                {filteredEvents.length} Holidays & Observances
               </span>
             </div>
           </div>
         </div>
 
-        {/* Event Cards Grid */}
+        {/*Daftar Holidays & Observances (Tampilan Bersih Ala TimeAndDate) */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
           {filteredEvents.length === 0 ? (
             <div className="py-16 text-center space-y-3">
@@ -878,7 +1012,7 @@ export function EventRadarModal({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredEvents.map((ev) => {
                 const countryInfo =
                   COUNTRIES.find((c) => c.id === ev.country) ?? COUNTRIES[1];
@@ -894,18 +1028,19 @@ export function EventRadarModal({
                   (p) => p.id === ev.recommendedPalette
                 );
                 const isSelected = selectedIds.includes(ev.id);
+                const isIdeaOpen = expandedIdeaIds.includes(ev.id);
 
                 return (
                   <div
                     key={ev.id}
-                    className={`rounded-2xl bg-[#0e1422] border p-4 flex flex-col justify-between gap-3 transition-all shadow-lg ${
+                    className={`rounded-2xl bg-[#0e1422] border p-4 flex flex-col justify-between gap-3 transition-all shadow-md ${
                       isSelected
                         ? "border-purple-400 ring-1 ring-purple-500/40 bg-purple-950/10"
                         : "border-white/10 hover:border-cyan-500/40"
                     }`}
                   >
-                    <div className="space-y-2.5">
-                      {/* Top Badges */}
+                    <div className="space-y-2">
+                      {/* Baris Atas Ala TimeAndDate: Tanggal | Negara | Status Upload */}
                       <div className="flex flex-wrap items-center justify-between gap-1.5">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <button
@@ -916,42 +1051,41 @@ export function EventRadarModal({
                                 ? "bg-purple-600 text-white border-purple-400"
                                 : "bg-white/5 text-zinc-400 border-white/10 hover:text-white"
                             }`}
-                            title="Centang untuk digabung ke Batch Prompt (Multi-Kode // ====)"
+                            title="Centang untuk digabung ke Riset Paket / Batch Prompt"
                           >
                             {isSelected ? (
                               <CheckSquare className="w-3 h-3" />
                             ) : (
                               <Square className="w-3 h-3" />
                             )}
-                            <span>{isSelected ? "Terpilih" : "Batch"}</span>
                           </button>
-                          <span className="px-2.5 py-0.5 rounded-lg bg-white/10 text-white text-[10px] font-black flex items-center gap-1">
-                            <span>{countryInfo.flag}</span>
-                            <span>{countryInfo.label}</span>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold">
+
+                          {/* Badge Tanggal Ala TimeAndDate */}
+                          <span className="px-2.5 py-0.5 rounded-lg bg-red-500/15 text-red-300 border border-red-500/30 text-[10.5px] font-black tracking-wide">
                             {ev.exactDateStr
                               ? ev.exactDateStr
-                              : `${monthInfo.full} • ${ev.dateLabel}`}
+                              : `${monthInfo.short} • ${ev.dateLabel}`}
                           </span>
+
+                          {/* Badge Negara */}
+                          <span className="px-2 py-0.5 rounded-lg bg-white/10 text-zinc-200 text-[10px] font-bold flex items-center gap-1">
+                            <span>{countryInfo.flag}</span>
+                            <span>{countryInfo.label.split(" (")[0]}</span>
+                          </span>
+
                           {ev.daysLeft !== null && ev.daysLeft >= 0 && (
                             <span className="px-2 py-0.5 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[9.5px] font-bold flex items-center gap-1">
                               <Clock className="w-2.5 h-2.5" />
                               {ev.daysLeft === 0
-                                ? "Hari Ini!"
-                                : `${ev.daysLeft} hari lagi`}
+                                ? "Hari Ini"
+                                : `${ev.daysLeft} hr lagi`}
                             </span>
                           )}
                         </div>
 
                         <div className="flex items-center gap-1.5">
-                          {ev.source === "live" && (
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[8.5px] font-black uppercase">
-                              LIVE API
-                            </span>
-                          )}
                           <span
-                            className={`px-2 py-0.5 rounded-lg text-[9.5px] font-black border ${windowStatus.badgeClass}`}
+                            className={`px-2 py-0.5 rounded-lg text-[9px] font-black border ${windowStatus.badgeClass}`}
                             title={windowStatus.desc}
                           >
                             {windowStatus.label}
@@ -969,15 +1103,14 @@ export function EventRadarModal({
                         </div>
                       </div>
 
-                      {/* Title & Demand */}
-                      <div>
+                      {/* Nama Hari Libur / Observance & Keterangan Singkat */}
+                      <div className="pt-0.5">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-sm font-black text-white leading-snug">
+                          <h3 className="text-[13.5px] font-black text-white leading-snug">
                             {ev.title}
                           </h3>
-                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" />
-                            Demand: {ev.demand}
+                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300 text-[9px] font-bold">
+                            {ev.category}
                           </span>
                         </div>
                         <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
@@ -985,92 +1118,93 @@ export function EventRadarModal({
                         </p>
                       </div>
 
-                      {/* Studio Master Anti-Similarity Recommendation Box */}
-                      <div className="p-3 rounded-xl bg-black/50 border border-amber-500/25 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            Rekomendasi Tema Studio Master (Anti-Similarity)
-                          </span>
-                          <span className="text-[9px] text-zinc-500 font-semibold">
-                            {ev.category}
-                          </span>
-                        </div>
-                        <p className="text-xs font-bold text-amber-100 leading-snug">
-                          “{ev.promptTheme}”
-                        </p>
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5 text-[9.5px] text-zinc-400">
+                      {/* Collapsible Ide Bawaan (Supaya Tampilan Tetap Bersih Ala TimeAndDate) */}
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandIdea(ev.id)}
+                          className="text-[10px] font-bold text-amber-300/80 hover:text-amber-300 flex items-center gap-1 pt-0.5"
+                        >
+                          <Sparkles className="w-3 h-3" />
                           <span>
-                            Style:{" "}
-                            <strong className="text-cyan-300">
-                              {styleObj?.label.split(" (")[0] ??
-                                ev.recommendedStyle}
-                            </strong>
+                            {isIdeaOpen
+                              ? "Sembunyikan Referensi Konsep Bawaan"
+                              : "Lihat Referensi Konsep Bawaan & Palet"}
                           </span>
-                          {paletteObj && (
-                            <div className="flex items-center gap-1.5">
-                              <span>Palet:</span>
-                              <div className="flex items-center gap-0.5">
-                                {paletteObj.colors.map((hex, i) => (
-                                  <span
-                                    key={i}
-                                    className="w-3 h-3 rounded-full border border-white/20"
-                                    style={{ backgroundColor: hex }}
-                                    title={hex}
-                                  />
-                                ))}
-                              </div>
-                            </div>
+                          {isIdeaOpen ? (
+                            <ChevronUp className="w-3 h-3" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3" />
                           )}
-                        </div>
+                        </button>
+
+                        {isIdeaOpen && (
+                          <div className="mt-2 p-2.5 rounded-xl bg-black/50 border border-amber-500/20 space-y-1.5">
+                            <p className="text-[11px] font-bold text-amber-100 leading-snug">
+                              “{ev.promptTheme}”
+                            </p>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[9.5px] text-zinc-400">
+                              <span>
+                                Style:{" "}
+                                <strong className="text-cyan-300">
+                                  {styleObj?.label.split(" (")[0] ??
+                                    ev.recommendedStyle}
+                                </strong>
+                              </span>
+                              {paletteObj && (
+                                <div className="flex items-center gap-1">
+                                  <span>Palet:</span>
+                                  {paletteObj.colors.map((hex, i) => (
+                                    <span
+                                      key={i}
+                                      className="w-2.5 h-2.5 rounded-full border border-white/20"
+                                      style={{ backgroundColor: hex }}
+                                      title={hex}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Footer: Keywords & Action Buttons */}
-                    <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1">
-                        <Tag className="w-3 h-3 text-zinc-500 mr-0.5" />
-                        {ev.keywords.slice(0, 3).map((kw) => (
-                          <span
-                            key={kw}
-                            className="px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 text-[9px]"
-                          >
-                            {kw}
-                          </span>
-                        ))}
+                    {/* Footer Action Bar: 1. Prompt Riset AI (Utama) | 2. Eksekusi Cepat */}
+                    <div className="pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[9px] font-black flex items-center gap-1">
+                          <TrendingUp className="w-2.5 h-2.5" />
+                          {ev.demand}
+                        </span>
                         {ev.keywords.length > 0 && (
                           <button
                             type="button"
                             onClick={() =>
                               handleCopyKeywords(ev.keywords, ev.title)
                             }
-                            className="ml-0.5 px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-zinc-300 text-[9px] font-bold flex items-center gap-1"
-                            title="Salin semua keyword bahasa Inggris untuk metadata microstock"
+                            className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 text-zinc-300 text-[9px] font-bold flex items-center gap-1"
+                            title={`Keywords: ${ev.keywords.join(", ")}`}
                           >
-                            <Copy className="w-2.5 h-2.5" />
+                            <Tag className="w-2.5 h-2.5 text-cyan-400" />
                             Tag
                           </button>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {/* TOMBOL UTAMA BARU: Salin Prompt Riset AI */}
                         <button
                           type="button"
-                          onClick={() =>
-                            onSelectEventForStudio({
-                              tema: ev.promptTheme,
-                              styleAnchor: ev.recommendedStyle,
-                              paletteId: ev.recommendedPalette,
-                              eventTitle: ev.title,
-                              targetMode: "svg",
-                              ts: Date.now(),
-                            })
-                          }
-                          className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[9.5px] font-black uppercase tracking-wider transition-all"
-                          title="Kirim tema event ini ke Prompt AI mode SVG Motion"
+                          onClick={() => handleCopySingleResearchPrompt(ev)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-500 hover:from-cyan-300 hover:to-indigo-400 text-black text-[9.5px] font-black uppercase tracking-wider shadow-md shadow-cyan-950/50 transition-all"
+                          title="Salin Prompt Riset Pasar & 3 Konsep Terbaik untuk ditempelkan ke ChatGPT / Claude / Gemini"
                         >
-                          SVG
+                          <BrainCircuit className="w-3.5 h-3.5" />
+                          🔍 Prompt Riset AI
                         </button>
+
+                        {/* Eksekusi Cepat ke Studio Master / SVG */}
                         <button
                           type="button"
                           onClick={() =>
@@ -1083,10 +1217,28 @@ export function EventRadarModal({
                               ts: Date.now(),
                             })
                           }
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[9.5px] font-black uppercase tracking-wider shadow-md shadow-amber-950/50 transition-all"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-[9.5px] font-black uppercase tracking-wider transition-all"
+                          title="Langsung buka di jendela Studio Master Prompt"
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Studio Master
+                          <Sparkles className="w-3 h-3" />
+                          Studio
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSelectEventForStudio({
+                              tema: ev.promptTheme,
+                              styleAnchor: ev.recommendedStyle,
+                              paletteId: ev.recommendedPalette,
+                              eventTitle: ev.title,
+                              targetMode: "svg",
+                              ts: Date.now(),
+                            })
+                          }
+                          className="px-2 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[9.5px] font-black uppercase tracking-wider transition-all"
+                          title="Langsung buka di jendela SVG Motion Prompt"
+                        >
+                          SVG
                         </button>
                       </div>
                     </div>
@@ -1104,7 +1256,7 @@ export function EventRadarModal({
               <span className="px-2.5 py-1 rounded-xl bg-purple-500 text-white text-xs font-black">
                 {selectedEventsList.length} Event Terpilih
               </span>
-              <div className="text-[11px] text-purple-200 max-w-md truncate">
+              <div className="text-[11px] text-purple-200 max-w-xs truncate">
                 {selectedEventsList.map((e) => e.title).join(" • ")}
               </div>
             </div>
@@ -1113,18 +1265,29 @@ export function EventRadarModal({
               <button
                 type="button"
                 onClick={handleCopyBatchKeywords}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[10px] font-bold uppercase tracking-wider"
+                className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[10px] font-bold uppercase tracking-wider"
               >
                 <Tag className="w-3.5 h-3.5 text-cyan-300" />
-                Salin Semua Tag
+                Tag
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleCopyMonthlyResearchPrompt(selectedEventsList)
+                }
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-500 hover:from-cyan-300 hover:to-indigo-400 text-black text-[10px] font-black uppercase tracking-wider shadow-lg"
+                title="Riset semua event yang dicentang ini di AI sekaligus minta dibuatkan kode Batch // ===="
+              >
+                <BrainCircuit className="w-3.5 h-3.5" />
+                1A. Salin Prompt Riset Paket Ini
               </button>
               <button
                 type="button"
                 onClick={handleCopyBatchPrompt}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[10px] font-black uppercase tracking-wider shadow-lg"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black text-[10px] font-black uppercase tracking-wider shadow-lg"
               >
                 <Copy className="w-3.5 h-3.5" />
-                1. Salin Batch Prompt ( Pemisah // ==== )
+                1B. Batch Langsung (// ====)
               </button>
               <button
                 type="button"
@@ -1135,7 +1298,7 @@ export function EventRadarModal({
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-wider shadow-lg"
               >
                 <Package className="w-3.5 h-3.5" />
-                2. Buka Bulk Render ZIP
+                2. Buka Bulk ZIP
               </button>
             </div>
           </div>

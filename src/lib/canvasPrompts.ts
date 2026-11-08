@@ -538,3 +538,119 @@ FORMAT OUTPUT WAJIB UNTUK BULK RENDER ZIP:
 // ====
 - Jangan menulis penjelasan teks di luar blok kode agar langsung bisa ditempel ke fitur Bulk Render ZIP.`;
 }
+
+// ======================= PROMPT RISET PASAR & KONSEP AI (ALA TIMEANDDATE) =======================
+export interface EventResearchParams {
+  title: string;
+  countryLabel: string;
+  monthLabel: string;
+  dateLabel: string;
+  category: string;
+  durasi: number;
+  rasio: string;
+  resolusi: string;
+  width: number;
+  height: number;
+}
+
+export function buildEventResearchPrompt(p: EventResearchParams): string {
+  const d = Math.max(1, Math.round(p.durasi * 100) / 100);
+  return `Bertindaklah sebagai Senior Microstock Market Researcher & Lead Creative Director di studio motion graphic kelas dunia (standar Buck, ManvsMachine, Ordinary Folk).
+
+Saya sedang merencanakan produksi video motion graphics bernilai komersial tinggi dari kalender event dunia (timeanddate.com):
+- NAMA EVENT / HARI LIBUR: ${p.title}
+- NEGARA / WILAYAH PASAR: ${p.countryLabel}
+- BULAN & TANGGAL: ${p.monthLabel} (${p.dateLabel})
+- KATEGORI EVENT: ${p.category}
+- TARGET SPESIFIKASI VIDEO: ${p.rasio} (${p.resolusi} — ${p.width}x${p.height} px), Durasi ${d} detik seamless loop.
+
+TUGASmu ADALAH MELAKUKAN RISET MENDALAM & EKSEKUSI KODE DALAM 2 TAHAP:
+
+====================================================================
+TAHAP 1 — RISET PASAR, SIMBOL VISUAL & 3 KONSEP ANTI-SIMILARITY
+====================================================================
+1. ANALISIS PEMBELI UTAMA (BUYER PERSONA):
+   Jelaskan secara singkat siapa pembeli utama video "${p.title}" di pasar ${p.countryLabel} (apakah agensi periklanan, broadcast TV, e-commerce retail, korporat, atau pemerintahan) dan untuk kebutuhan apa video ini dipakai.
+2. SIMBOL & MOTIF OTENTIK (BUKAN KLISE):
+   Sebutkan bentuk geometri, arsitektur, tekstur material, atau simbol tradisi otentik dari "${p.title}" yang punya daya tarik komersial tinggi namun bebas masalah hak cipta/trademark.
+3. PSIKOLOGI PALET WARNA (5 KODE HEX):
+   Rekomendasikan 5 kode warna Hex eksklusif (Background gelap mewah, Struktur utama, 2 Aksen cahaya, dan Highlight) yang paling memicu konversi pembelian untuk event ini.
+4. 3 KONSEP VISUAL ORISINIL (ANTI-SIMILARITY):
+   Rumuskan 3 konsep animasi Pseudo-3D / Geometris yang berbeda total satu sama lain:
+   - Konsep 1 (Arsitektur Isometrik / Monolit 3D)
+   - Konsep 2 (Frosted Glassmorphism / Kristal Berlapis)
+   - Konsep 3 (Kinetic Geometry / Gelombang Pita Bezier 3D)
+5. METADATA MICROSTOCK SIAP UPLOAD:
+   Berikan 1 Judul Bahasa Inggris (maks 70 karakter, SEO friendly) dan 25 Keywords Bahasa Inggris bervolume pencarian tinggi dipisahkan koma.
+
+====================================================================
+TAHAP 2 — EKSEKUSI 3 KODE ANIMASI SIAP RENDER (BULK ZIP // ====)
+====================================================================
+Langsung wujudkan ketiga konsep terbaik hasil risetmu di atas menjadi 3 KODE ANIMASI CANVAS 2D yang digabung dalam SATU blok kode JavaScript dengan pemisah baris:
+// ====
+
+ATURAN TEKNIS KODE ZAE MOTION (WAJIB DITAATI):
+- Setiap kode harus berupa fungsi mandiri: function draw(ctx, time, width, height, assets) { ... }
+- Gunakan loop mulus ${d} detik: const t = time % ${d}; const p = t / ${d};
+- Proporsi responsif: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height); (margin aman minimal 18% dari tepi kanvas).
+- DILARANG KERAS membuat lingkaran cincin klise, garis dashed orbit berputar, atau bola mengitari pusat.
+${MICROSTOCK_SAFE_RULES}
+Pastikan blok kode JavaScript di bagian akhir bersih dan hanya berisi 3 fungsi draw(...) yang dipisahkan oleh // ==== agar bisa langsung saya copy-paste ke fitur Bulk Render ZIP di ZAE MOTION.`;
+}
+
+export interface MonthlyResearchItem {
+  title: string;
+  countryLabel: string;
+  dateLabel: string;
+  category: string;
+}
+
+export function buildMonthlyResearchPrompt(params: {
+  countryFilterLabel: string;
+  monthFilterLabel: string;
+  events: MonthlyResearchItem[];
+  durasi: number;
+  rasio: string;
+  resolusi: string;
+  width: number;
+  height: number;
+}): string {
+  const d = Math.max(1, Math.round(params.durasi * 100) / 100);
+  const listText = params.events
+    .map(
+      (ev, i) =>
+        `${i + 1}. [${ev.dateLabel}] ${ev.title} — Pasar: ${ev.countryLabel} (${ev.category})`
+    )
+    .join("\n");
+
+  const targetCount = Math.min(params.events.length, 8);
+
+  return `Bertindaklah sebagai Senior Microstock Strategist & Lead Creative Technologist (standar Buck, ManvsMachine, Ordinary Folk).
+
+Berikut adalah daftar event & hari libur dari kalender dunia (timeanddate.com) untuk filter:
+- WILAYAH / NEGARA: ${params.countryFilterLabel}
+- PERIODE BULAN: ${params.monthFilterLabel}
+- SPESIFIKASI RENDER: ${params.rasio} (${params.resolusi} — ${params.width}x${params.height} px), Durasi ${d} detik seamless loop.
+
+DAFTAR EVENT PADA PERIODE INI:
+${listText}
+
+TUGASmu ADALAH MELAKUKAN RISET & EKSEKUSI PAKET PRODUKSI:
+
+1. RISET & SELEKSI EVENT PALING CUAN (TOP ${targetCount} HIGH-DEMAND EVENTS):
+   Dari daftar di atas, analisis dan pilih ${targetCount} event dengan potensi penjualan komersial tertinggi di Adobe Stock & Shutterstock. Jelaskan secara singkat:
+   - Mengapa event tersebut sangat dicari pembeli.
+   - Arahan Konsep Visual Pseudo-3D / Geometris yang unik (Anti-Similarity) beserta 5 kode warna Hex terbaiknya.
+   - Kumpulan 25 Keywords Bahasa Inggris gabungan untuk paket bulan ini.
+
+2. EKSEKUSI KODE BATCH SIAP RENDER (${targetCount} VIDEO DENGAN PEMISAH // ====):
+   Di bagian akhir, tuliskan SATU blok kode JavaScript berisi ${targetCount} fungsi animasi Canvas 2D lengkap (1 kode untuk masing-masing dari ${targetCount} event terpilih), dipisahkan dengan baris:
+   // ====
+
+ATURAN TEKNIS KODE ZAE MOTION (MUTLAK DIPATUHI):
+- Setiap kode wajib menggunakan: function draw(ctx, time, width, height, assets) { ... }
+- Loop sempurna ${d} detik: const t = time % ${d}; const p = t / ${d};
+- Responsif terhadap layar: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height); (margin aman minimal 18%).
+- Setiap kode (#1 s/d #${targetCount}) WAJIB memiliki bentuk geometri utama yang BERBEDA TOTAL (Isometrik 3D, Frosted Glass, Kinetic Ribbon, Swiss Grid, dll.) — DILARANG membuat lingkaran orbit klise.
+${MICROSTOCK_SAFE_RULES}`;
+}

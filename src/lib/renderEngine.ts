@@ -59,6 +59,40 @@ function buildFilename(ext: string): string {
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Yield macrotask tanpa setTimeout agar TIDAK terkena throttling 1000ms
+ * saat tab berada di background (pindah tab browser).
+ */
+const fastYield = (): Promise<void> =>
+  new Promise((resolve) => {
+    if (typeof MessageChannel !== "undefined") {
+      const ch = new MessageChannel();
+      ch.port1.onmessage = () => resolve();
+      ch.port2.postMessage(null);
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+
+/**
+ * Tunggu antrian encoder turun tanpa terkena throttling setTimeout di background tab.
+ */
+const waitForDequeue = (encoder: VideoEncoder): Promise<void> =>
+  new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      encoder.removeEventListener("dequeue", done);
+      resolve();
+    };
+    encoder.addEventListener("dequeue", done, { once: true });
+    // Fallback cepat via MessageChannel bila dequeue sudah terjadi sebelum listener aktif
+    fastYield().then(() => {
+      if (encoder.encodeQueueSize <= 8) done();
+    });
+  });
+
+/**
  * Cari konfigurasi H.264 yang didukung browser (profil High, level tinggi untuk 2K/4K).
  * Urutan: GPU + bitrate konstan (CBR) dulu. Hasil ukur di Chrome: VBR hanya memakai
  * ~10 dari 25 Mbps dan ~20 dari 80 Mbps, sedangkan CBR tepat di target dengan kualitas
@@ -150,7 +184,7 @@ async function renderWithWebCodecs(options: RenderOptions, source: FrameSource, 
 
       while (encoder.encodeQueueSize > 8) {
         // eslint-disable-next-line no-await-in-loop
-        await wait(4);
+        await waitForDequeue(encoder);
       }
 
       if (realtime) {
@@ -158,9 +192,9 @@ async function renderWithWebCodecs(options: RenderOptions, source: FrameSource, 
         // eslint-disable-next-line no-await-in-loop
         if (due > 0) await wait(due);
       } else if (frame % 10 === 9) {
-        // Beri napas ke UI supaya progress & tombol batal tetap responsif.
+        // Beri napas ke UI supaya progress & tombol batal tetap responsif tanpa throttling background tab.
         // eslint-disable-next-line no-await-in-loop
-        await wait(0);
+        await fastYield();
       }
     }
 
