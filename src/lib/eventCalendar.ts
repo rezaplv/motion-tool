@@ -54,7 +54,8 @@ export interface CalendarEventItem {
     | "swiss-kinetic"
     | "frosted-glass"
     | "isometric-fintech"
-    | "organic-ribbon";
+    | "organic-ribbon"
+    | "flat-vector";
   /** ID dari STUDIO_HEX_PALETTES */
   recommendedPalette:
     | "void-sky"
@@ -63,7 +64,8 @@ export interface CalendarEventItem {
     | "titanium-ultraviolet"
     | "arctic-slate"
     | "crimson-imperial"
-    | "sakura-aurora";
+    | "sakura-aurora"
+    | "daylight-pastel";
   /** Kata kunci microstock bahasa Inggris untuk mempermudah metadata saat upload */
   keywords: string[];
   isCustom?: boolean;

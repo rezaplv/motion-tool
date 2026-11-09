@@ -91,7 +91,65 @@ export const STUDIO_STYLE_ANCHORS = [
     label: "Generative 3D Bezier Ribbon & Fluid Matrix",
     desc: "Generative Parametric Ribbon Matrix (Jalinan kurva Bezier pita 3D berlapis yang mengalir harmonis dengan ketebalan dinamis dan kedalaman ruang volumetrik).",
   },
+  {
+    id: "flat-vector",
+    label: "Flat Vector Premium (Multi-Layer Side-View & Contact Shadow)",
+    desc: "Flat Vector Premium Side-View (Ilustrasi vektor bergradasi halus tampak samping dengan 3 lapisan kedalaman berkabut, shading dua nada + rim light, bayangan kontak elips, dan gerakan ambient pelan — ideal untuk tema objek nyata: kendaraan, kota, energi, bisnis, gaya hidup).",
+  },
 ] as const;
+
+/** Cek apakah gaya visual yang dipilih adalah Flat Vector (dari teks bebas maupun ID style anchor). */
+export function isFlatVectorStyle(gaya: string | undefined | null): boolean {
+  if (!gaya) return false;
+  return /flat[\s-]*vector/i.test(gaya);
+}
+
+/**
+ * Spesifikasi GAYA VISUAL Flat Vector Premium (side-view berlapis).
+ * Objek utama otomatis mengikuti tema (tidak terkunci ke satu objek tertentu).
+ */
+export function flatVectorStyleSpec(tema: string): string {
+  return `
+GAYA VISUAL — FLAT VECTOR PREMIUM (WAJIB DIIKUTI):
+- Flat vector dengan gradasi halus. Setiap bentuk besar memakai gradasi lembut (terang di atas, gelap di bawah). Tidak ada warna datar polos dan tidak ada tekstur foto.
+- Komposisi tampak samping (side view) dengan kedalaman berlapis: latar jauh, tengah, dan depan. Lapisan jauh lebih pucat dan berkabut.
+- Bentuk bersih: siluet dari kurva bezier, sudut membulat, dan garis highlight tipis di tepi objek.
+- Shading dua nada: sisi terang dan sisi gelap. Satu arah cahaya konsisten, dengan rim light di tepi yang menghadap sumber cahaya.
+- Semua objek yang berdiri punya bayangan kontak (elips lembut) di bawahnya.
+- Kaca (jika ada) punya gradasi pantulan langit dan pita highlight diagonal yang bergerak pelan.
+- Glow hanya dari sumber cahaya nyata (matahari, lampu, LED, layar), dibuat dengan radial gradient. Mode "lighter" hanya untuk adegan malam atau neon.
+- Objek utama: representasi konkret dan detail dari tema "${tema}" (siluet realistis, komponen fungsional, indikator/detail kecil yang relevan dengan cerita tema). Jika ada aliran energi/data, buat sebagai kurva bezier dengan partikel yang bergerak di sepanjang jalurnya.
+- Latar mendukung cerita tema dan dibuat bersih: 1–3 objek utama detail, dekorasi pendukung maksimal 4–5 jenis.
+- Palet 4–5 warna per konsep plus netral. Siang memakai warna cerah dan lembut. Malam memakai ungu gelap dengan aksen neon. Senja memakai gradasi oranye ke magenta.
+- Gerakan ambient pelan: awan melayang, daun atau pohon bergoyang, kilau berjalan, cahaya bergeser, ring atau gauge berputar.
+- Ruang desain tetap 1920x1080: const s = Math.min(width/1920, height/1080); const ox = (width - 1920*s)/2, oy = (height - 1080*s)/2; gambar di koordinat desain lalu ctx.translate(ox, oy); ctx.scale(s, s). Background (langit, tanah, latar) WAJIB diisi sampai batas kiri, kanan, atas, bawah layar (di luar area desain juga), objek utama tetap di zona aman tengah.
+`;
+}
+
+/**
+ * ATURAN KUALITAS PRO (berlaku untuk SEMUA gaya): loop seamless matematis, anti AI slop,
+ * dan performa render (tanpa shadowBlur). Disuntikkan ke seluruh generator prompt Canvas.
+ */
+export const PRO_QUALITY_RULES = `
+ATURAN LOOP (WAJIB — ANTI PATAH SAAT LOOPING):
+- Semua gerakan periodik memakai jumlah siklus BILANGAN BULAT per loop, misalnya Math.sin(TAU * p * k) dengan k integer (const TAU = Math.PI * 2; p = progres loop 0..1).
+- Objek yang melintas layar memakai wrap mod1 ((x % 1) + 1) % 1 dan masuk atau keluar di LUAR frame (tidak muncul/hilang tiba-tiba di tengah layar).
+- Nilai yang naik (persentase, progress bar, angka) direset saat elemennya sedang di-fade, bukan melompat di depan mata.
+- Frame terakhir harus identik dengan frame pertama. Tidak ada flicker, objek terpotong, teks bertumpuk, atau gerakan patah.
+
+ANTI AI SLOP (WAJIB):
+- Setiap objek punya peran dalam cerita visual. Tidak ada dekorasi acak pengisi ruang.
+- Proporsi realistis dan konsisten antar objek.
+- Glow, partikel, dan lens flare dipakai hemat.
+- Tidak ada elemen identik yang diulang mentah-mentah. Variasikan ukuran, posisi, dan fase animasinya (gunakan random ber-seed tetap).
+- Teks hanya angka/label generik pendek. Tanpa tulisan bermakna, logo, atau merek.
+- Tepi bersih dan komposisi seimbang, dengan ruang kosong yang disengaja.
+
+ATURAN PERFORMA & STABILITAS KODE:
+- DILARANG memakai ctx.shadowBlur / shadowColor (berat untuk render 2K/4K). Gunakan createRadialGradient untuk glow dan elips gradasi untuk bayangan.
+- Semua objek konfigurasi harus mendefinisikan semua properti yang dipakai. Tidak boleh ada undefined atau NaN di koordinat, ukuran, dan color stop gradient (pastikan radius gradient > 0).
+- Reset state di setiap frame: ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; gunakan ctx.save()/ctx.restore() berpasangan.
+`;
 
 export const STUDIO_HEX_PALETTES = [
   {
@@ -164,6 +222,16 @@ export const STUDIO_HEX_PALETTES = [
   * Aksen Pendar 2: #38bdf8 (Pearl Cyan Breeze)
   * Highlight Cahaya: #fdf2f8 dengan globalAlpha lembut.`,
   },
+  {
+    id: "daylight-pastel",
+    label: "Daylight Sky & Soft Pastel (Flat Vector Siang / Lifestyle)",
+    colors: ["#bfe3f7", "#f8fafc", "#34d399", "#fbbf24", "#334155"],
+    spec: `  * Langit/Background: #bfe3f7 → #f8fafc (Soft Daylight Sky, gradasi atas ke bawah)
+  * Lapisan Alam/Tanah: #34d399 (Fresh Mint Meadow) dengan versi lebih pucat untuk lapisan jauh
+  * Aksen Hangat: #fbbf24 (Sunlight Amber) untuk matahari, lampu, indikator
+  * Struktur/Objek Netral: #334155 (Slate Ink) untuk siluet, detail, dan bayangan kontak lembut
+  * Highlight: #ffffff tipis di tepi objek (rim light).`,
+  },
 ] as const;
 
 export const MICROSTOCK_SAFE_RULES = `
@@ -193,14 +261,17 @@ Energy / Mood: {{ENERGY}}
 Background: {{BACKGROUND}}
 Rasio: {{RASIO}}
 Resolusi: {{RESOLUSI}}
+{{GAYA_DETAIL}}
 Setiap konsep wajib berisi:
 - Judul
-- Ringkasan visual
+- Ringkasan visual (1–2 kalimat)
+- Komposisi: objek utama, posisi dan ukurannya terhadap frame, titik fokus
+- Palet: 4–5 warna (kode Hex)
 - Struktur scene
-- Gaya motion
+- Gaya motion: gerakan berulang dan sumbernya
 - Nilai jual microstock
 Aturan konsep:
-- Semua konsep harus berbeda.
+- Semua konsep harus berbeda dari sisi lokasi/latar, waktu (siang/senja/malam), palet, dan komposisi.
 - Visual harus premium, modern, komersial, dan layak untuk Shutterstock, Adobe Stock, Pond5, Storyblocks, dan Vecteezy.
 - KOMPOSISI PRESISI & SAFE MARGIN: Objek utama WAJIB berpusat persis di tengah kanvas (center-aligned: width / 2, height / 2). Berikan safe margin minimal 15% dari tepi layar (ukuran objek maksimal 70% dari minSide) agar objek TIDAK PERNAH terpotong atau keluar dari kanvas saat bergerak atau berputar.
 - ANTI-GENERIK & ANTI-LINGKARAN ORBIT (PENTING): JANGAN buat desain klise pemula berupa lingkaran berputar konsentris, cincin garis putus-putus (dashed ring), atau orbit titik-titik melingkar di sekeliling objek! Wajib buat objek utama dengan bentuk representasi konkret sesuai tema (misal: kubus 3D isometrik, susunan diagram batang bertingkat, chip sirkuit kotak, kartu berlapis, atau bentuk poligon unik). Ornamen pendukung wajib berupa garis lurus/grid/partikel vertikal, BUKAN lingkaran mengitari objek.
@@ -243,6 +314,7 @@ const currentScene = Math.floor(loopT / sceneDuration);
 const sceneProgress = (loopT % sceneDuration) / sceneDuration;
 Semua animasi harus memakai t, loopT, currentScene, dan sceneProgress.
 Jika jumlah scene hanya 1, jangan memaksa pergantian scene. Buat satu visual utama yang tetap hidup sepanjang durasi.
+{{ATURAN_PRO}}
 Saat membuat kode, jangan beri penjelasan. Output hanya kode JavaScript siap copy.`;
 
 // ======================= SINGLE PROMPT (1 PROMPT LANGSUNG) =======================
@@ -264,7 +336,7 @@ RASIO:
 
 GAYA VISUAL:
 [{{GAYA_VISUAL}}]
-
+{{GAYA_DETAIL}}
 PALET WARNA:
 [{{WARNA}}]
 
@@ -299,7 +371,7 @@ ATURAN VISUAL:
      * Jika Teknologi / AI / Data: Gambar chip prosesor kotak bersegi dengan matriks pin dan jalur sirkuit listrik yang mengalir ke 4 penjuru.
      * Jika Abstrak / Futuristik: Gambar kubus isometrik 3D yang terbuka, prisma heksagonal melayang, atau pita melengkung (ribbon) dinamis.
      * Jika Karakter / Seasonal (misal Halloween/Festive): Gambar siluet atau wajah ikonik secara utuh tanpa dibingkai oleh cincin/lingkaran orbit berputar.
-   - Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (createLinearGradient), dan efek kedalaman pencahayaan/shadow (shadowBlur).
+   - Wajib gunakan palet warna kompleks (minimal 4 warna), gradasi (createLinearGradient), dan efek kedalaman pencahayaan dengan createRadialGradient (BUKAN shadowBlur).
 ·  Komposisi harus rapi, seimbang, dan objek utama terlihat jelas menjadi fokus utama.
 ·  Hindari teks tertutup objek.
 ·  Jangan gunakan logo, brand, watermark, karakter berlisensi, atau asset eksternal.
@@ -311,7 +383,7 @@ ATURAN MOTION:
 ·  Gerakan objek harus logis dan sesuai konsep tema.
 ·  Hindari gerakan yang terlalu cepat, patah-patah, atau membingungkan.
 ·  Transisi antar scene (jika lebih dari 1 scene) harus seamless.
-
+{{ATURAN_PRO}}
 {{SAFE_MODE}}
 {{ATURAN_KODE}}`;
 
@@ -405,6 +477,8 @@ export function buildTemplatePrompt(p: TemplatePromptParams): string {
     LEBAR: String(p.width),
     TINGGI: String(p.height),
     SAFE_MODE: MICROSTOCK_SAFE_RULES,
+    GAYA_DETAIL: isFlatVectorStyle(p.gayaVisual) ? flatVectorStyleSpec(p.tema) : "",
+    ATURAN_PRO: PRO_QUALITY_RULES,
     ATURAN_KODE: canvasCodeRules(p.durasi, p.width, p.height, p.assetKeys, p.background),
   });
 }
@@ -428,6 +502,8 @@ export function buildSinglePrompt(p: SinglePromptParams): string {
     LEBAR: String(p.width),
     TINGGI: String(p.height),
     SAFE_MODE: MICROSTOCK_SAFE_RULES,
+    GAYA_DETAIL: isFlatVectorStyle(p.gayaVisual) || isFlatVectorStyle(p.konsep) ? flatVectorStyleSpec(p.tema) : "",
+    ATURAN_PRO: PRO_QUALITY_RULES,
     ATURAN_KODE: canvasCodeRules(secs, p.width, p.height, p.assetKeys, p.background),
   });
 }
@@ -446,13 +522,9 @@ KONSEP & ARAHAN ART DIRECTION:
 
 ATURAN ANTI-SIMILARITY (MUTLAK DIPATUHI):
 1. DILARANG KERAS membuat elemen lingkaran cincin klise, garis dashed orbit berputar, HUD lingkaran ala Iron Man, atau bola yang mengitari objek seperti planet.
-2. Objek utama HARUS berupa konstruksi anatomi orisinil: gunakan proyeksi Pseudo-3D Isometrik (fungsi toIso(x,y,z)), susunan poligon parametrik, lempengan kaca berlapis (layered translucent wafers), atau jalinan kurva Bezier pita ganda yang bergerak dinamis.
-3. Wajib memiliki 3 lapisan kedalaman visual:
-   - Deep Layer: Grid matriks teknis halus dan ambient radial glow.
-   - Hero Layer: Konstruksi utama dengan directional face shading, bevel highlight, dan gradient multi-stop.
-   - Atmospheric Layer: Partikel debu data melayang halus dengan variasi kedalaman (foreground bokeh).
+{{HERO_RULES}}
 4. DINAMIKA GERAK: Gunakan formula pergerakan non-linear (easeInOutCubic dan damping spring). Berikan offset fase (phase shift) agar komponen bergerak berurutan (staggered cascade), bukan bergerak kaku bersamaan.
-{{SAFE_MODE}}
+{{GAYA_DETAIL}}{{ATURAN_PRO}}{{SAFE_MODE}}
 KONTRAK KODE TEKNIS:
 - Tuliskan fungsi: function draw(ctx, time, width, height, assets)
 - Waktu (time) dalam DETIK. Hitung loop menggunakan: const t = time % {{DURASI}}; const p = t / {{DURASI}};
@@ -466,10 +538,25 @@ export function buildStudioMasterPrompt(p: StudioMasterParams): string {
   const anchor = STUDIO_STYLE_ANCHORS.find((a) => a.id === p.styleAnchor) ?? STUDIO_STYLE_ANCHORS[0];
   const palette = STUDIO_HEX_PALETTES.find((pal) => pal.id === p.paletteId) ?? STUDIO_HEX_PALETTES[0];
   const d = Math.max(1, Math.round(p.durasi * 100) / 100);
+  const flat = anchor.id === "flat-vector";
+  const heroRules = flat
+    ? `2. Objek utama HARUS berupa ilustrasi Flat Vector side-view yang konkret dan detail sesuai tema (siluet bezier realistis, komponen fungsional, detail kecil yang bercerita) — bukan bentuk abstrak acak.
+3. Wajib memiliki 3 lapisan kedalaman visual:
+   - Latar Jauh: siluet pucat dan berkabut (langit gradasi, bangunan/bukit jauh, awan melayang).
+   - Lapisan Tengah: objek utama dengan shading dua nada, rim light, highlight tepi, dan bayangan kontak elips.
+   - Lapisan Depan: elemen pendukung (tanaman, pagar, partikel cahaya) yang bergerak pelan untuk parallax.`
+    : `2. Objek utama HARUS berupa konstruksi anatomi orisinil: gunakan proyeksi Pseudo-3D Isometrik (fungsi toIso(x,y,z)), susunan poligon parametrik, lempengan kaca berlapis (layered translucent wafers), atau jalinan kurva Bezier pita ganda yang bergerak dinamis.
+3. Wajib memiliki 3 lapisan kedalaman visual:
+   - Deep Layer: Grid matriks teknis halus dan ambient radial glow.
+   - Hero Layer: Konstruksi utama dengan directional face shading, bevel highlight, dan gradient multi-stop.
+   - Atmospheric Layer: Partikel debu data melayang halus dengan variasi kedalaman (foreground bokeh).`;
   return fillTemplate(STUDIO_MASTER_PROMPT, {
     TEMA: p.tema,
     STYLE_ANCHOR: anchor.desc,
     HEX_PALETTE_SPEC: palette.spec,
+    HERO_RULES: heroRules,
+    GAYA_DETAIL: flat ? flatVectorStyleSpec(p.tema) : "",
+    ATURAN_PRO: PRO_QUALITY_RULES,
     DURASI: String(d),
     RASIO: p.rasio,
     RESOLUSI: p.resolusi,
@@ -509,7 +596,11 @@ export function buildBatchStudioEventsPrompt(params: {
         STUDIO_HEX_PALETTES[0];
       return `KODE #${idx + 1} — EVENT: ${item.title} (${item.countryLabel} • ${item.dateLabel})
 - TEMA VISUAL: ${item.tema}
-- STYLE ANCHOR: ${anchor.label}
+- STYLE ANCHOR: ${anchor.label}${
+        anchor.id === "flat-vector"
+          ? " — ilustrasi side-view bergradasi halus, 3 lapisan kedalaman berkabut, shading dua nada + rim light, bayangan kontak elips, ruang desain 1920x1080 diskalakan (s = Math.min(width/1920, height/1080)), background penuh sampai tepi layar"
+          : ""
+      }
 - PALET HEX WAJIB: ${palette.colors.join(", ")}`;
     })
     .join("\n\n");
@@ -531,6 +622,7 @@ ATURAN ANTI-SIMILARITY ANTAR KODE (MUTLAK DIPATUHI):
 2. DILARANG KERAS membuat lingkaran cincin klise, garis dashed orbit berputar, atau bola yang mengitari pusat.
 3. Setiap kode wajib memiliki fungsi mandiri: function draw(ctx, time, width, height, assets) { ... }
 4. Gunakan proporsi responsif: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height); dengan margin aman minimal 18% dari tepi kanvas.
+${PRO_QUALITY_RULES}
 ${MICROSTOCK_SAFE_RULES}
 FORMAT OUTPUT WAJIB UNTUK BULK RENDER ZIP:
 - Gabungkan seluruh ${params.items.length} kode di dalam SATU blok kode JavaScript.
@@ -576,10 +668,10 @@ TAHAP 1 — RISET PASAR, SIMBOL VISUAL & 3 KONSEP ANTI-SIMILARITY
 3. PSIKOLOGI PALET WARNA (5 KODE HEX):
    Rekomendasikan 5 kode warna Hex eksklusif (Background gelap mewah, Struktur utama, 2 Aksen cahaya, dan Highlight) yang paling memicu konversi pembelian untuk event ini.
 4. 3 KONSEP VISUAL ORISINIL (ANTI-SIMILARITY):
-   Rumuskan 3 konsep animasi Pseudo-3D / Geometris yang berbeda total satu sama lain:
-   - Konsep 1 (Arsitektur Isometrik / Monolit 3D)
+   Rumuskan 3 konsep animasi yang berbeda total satu sama lain:
+   - Konsep 1 (Arsitektur Isometrik / Monolit Pseudo-3D)
    - Konsep 2 (Frosted Glassmorphism / Kristal Berlapis)
-   - Konsep 3 (Kinetic Geometry / Gelombang Pita Bezier 3D)
+   - Konsep 3 (Flat Vector Premium Side-View Scene — ilustrasi bergradasi halus, 3 lapisan kedalaman berkabut, shading dua nada + rim light, bayangan kontak elips; ATAU Kinetic Bezier Ribbon jika tema lebih abstrak)
 5. METADATA MICROSTOCK SIAP UPLOAD:
    Berikan 1 Judul Bahasa Inggris (maks 70 karakter, SEO friendly) dan 25 Keywords Bahasa Inggris bervolume pencarian tinggi dipisahkan koma.
 
@@ -594,6 +686,8 @@ ATURAN TEKNIS KODE ZAE MOTION (WAJIB DITAATI):
 - Gunakan loop mulus ${d} detik: const t = time % ${d}; const p = t / ${d};
 - Proporsi responsif: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height); (margin aman minimal 18% dari tepi kanvas).
 - DILARANG KERAS membuat lingkaran cincin klise, garis dashed orbit berputar, atau bola mengitari pusat.
+- Untuk konsep Flat Vector: gunakan ruang desain 1920x1080 (const s = Math.min(width/1920, height/1080); offset ox, oy di tengah) dan isi background sampai seluruh tepi layar.
+${PRO_QUALITY_RULES}
 ${MICROSTOCK_SAFE_RULES}
 Pastikan blok kode JavaScript di bagian akhir bersih dan hanya berisi 3 fungsi draw(...) yang dipisahkan oleh // ==== agar bisa langsung saya copy-paste ke fitur Bulk Render ZIP di ZAE MOTION.`;
 }
@@ -651,6 +745,7 @@ ATURAN TEKNIS KODE ZAE MOTION (MUTLAK DIPATUHI):
 - Setiap kode wajib menggunakan: function draw(ctx, time, width, height, assets) { ... }
 - Loop sempurna ${d} detik: const t = time % ${d}; const p = t / ${d};
 - Responsif terhadap layar: const cx = width / 2, cy = height / 2, minSide = Math.min(width, height); (margin aman minimal 18%).
-- Setiap kode (#1 s/d #${targetCount}) WAJIB memiliki bentuk geometri utama yang BERBEDA TOTAL (Isometrik 3D, Frosted Glass, Kinetic Ribbon, Swiss Grid, dll.) — DILARANG membuat lingkaran orbit klise.
+- Setiap kode (#1 s/d #${targetCount}) WAJIB memiliki bentuk geometri utama yang BERBEDA TOTAL (Isometrik 3D, Frosted Glass, Kinetic Ribbon, Swiss Grid, Flat Vector Side-View Scene, dll.) — DILARANG membuat lingkaran orbit klise.
+${PRO_QUALITY_RULES}
 ${MICROSTOCK_SAFE_RULES}`;
 }
