@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardPaste, Grid2X2, GripVertical, Play, Trash2, Wand2, X, XCircle } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardPaste, Copy, Grid2X2, GripVertical, Play, Trash2, Wand2, X, XCircle } from "lucide-react";
 import type { EngineMode } from "../types";
 import { sanitizeCode, trimProse } from "../lib/sanitizeCode";
 import { compileForMode, lintCode } from "../lib/compile";
@@ -48,6 +48,7 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
   const [size, setSize] = usePersistentState<HubSize>("hubSize", "md", (v): v is HubSize => typeof v === "string" && v in SIZES);
   const [pos, setPos] = usePersistentState<Pos>("hubPos", { x: -1, y: -1 }, isPos);
   const [autoStripBg, setAutoStripBg] = usePersistentState<boolean>("autoStripBg", false, (v): v is boolean => typeof v === "boolean");
+  const [copied, setCopied] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -145,6 +146,34 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
     } catch {
       onLog("warning", "Quick Paste: browser tidak mengizinkan membaca clipboard. Klik kotak kode lalu tekan Ctrl+V.");
       taRef.current?.focus();
+    }
+  }
+
+  async function handleCopy() {
+    if (!draft.trim()) {
+      return onLog("warning", "Quick Paste: kotak kode kosong, tidak ada yang disalin.");
+    }
+    try {
+      await navigator.clipboard.writeText(draft);
+      setCopied(true);
+      onLog("success", "Quick Paste: seluruh kode berhasil disalin ke clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = draft;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        onLog("success", "Quick Paste: seluruh kode berhasil disalin ke clipboard!");
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        onLog("error", "Quick Paste: gagal menyalin kode.");
+      }
+      document.body.removeChild(ta);
     }
   }
 
@@ -301,21 +330,31 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
               className="block w-full bg-transparent px-4 pt-3.5 pb-14 font-mono text-[12px] leading-[20px] text-emerald-200 placeholder:text-zinc-500 outline-none resize-none custom-scrollbar whitespace-pre"
               style={{ height: editor }}
             />
-            <div className="absolute right-3 bottom-3 flex gap-2">
+            <div className="absolute right-3 bottom-3 flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={handleFormat}
                 title="Bersihkan sisa format chat AI (```, teks penjelasan, export)"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] font-black uppercase hover:bg-amber-500/20"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] font-black uppercase hover:bg-amber-500/20"
               >
                 <Wand2 className="w-3.5 h-3.5" />
                 Format
               </button>
               <button
                 type="button"
+                onClick={handleCopy}
+                disabled={empty}
+                title="Salin seluruh isi kode ke clipboard"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-[10px] font-black uppercase hover:bg-cyan-500/20 disabled:opacity-40"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-cyan-300" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Disalin!" : "Copy"}
+              </button>
+              <button
+                type="button"
                 onClick={pasteFromClipboard}
                 title="Tempel jawaban AI dari clipboard dan langsung jalankan"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-400/40 bg-indigo-500/15 text-indigo-200 text-[10px] font-black uppercase hover:bg-indigo-500/25"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-400/40 bg-indigo-500/15 text-indigo-200 text-[10px] font-black uppercase hover:bg-indigo-500/25"
               >
                 <ClipboardPaste className="w-3.5 h-3.5" />
                 Paste
