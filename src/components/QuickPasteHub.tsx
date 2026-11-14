@@ -9,7 +9,7 @@ import { usePersistentState } from "../lib/usePersistentState";
 export type HubSize = "sm" | "md" | "lg" | "xl";
 
 const SIZES: Record<HubSize, { width: number; editor: number }> = {
-  sm: { width: 400, editor: 150 },
+  sm: { width: 420, editor: 155 },
   md: { width: 520, editor: 200 },
   lg: { width: 680, editor: 300 },
   xl: { width: 900, editor: 420 },
@@ -381,49 +381,97 @@ export function QuickPasteHub({ mode, code, onApply, onClose, onLog, runtimeErro
         </div>
       </div>
 
-      <div className={`grid ${mode === "canvas" ? "grid-cols-[auto_auto_auto_1fr]" : "grid-cols-[auto_auto_1fr]"} gap-2 px-5 pb-4 pt-3 border-t border-white/5`}>
-        <button
-          type="button"
-          onClick={handleClear}
-          title="Kosongkan kotak kode (preview tetap memakai kode terakhir)"
-          className="flex items-center gap-1.5 px-3.5 py-3 rounded-xl border border-red-500/30 bg-red-500/5 text-red-300 text-[11px] font-black uppercase hover:bg-red-500/15"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Kosongkan
-        </button>
-        <button
-          type="button"
-          onClick={handleBeautify}
-          disabled={empty}
-          title="Rapikan indentasi kode"
-          className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-amber-500/40 bg-amber-500/5 text-amber-300 text-[11px] font-black uppercase hover:bg-amber-500/15 disabled:opacity-40"
-        >
-          <Wand2 className="w-3.5 h-3.5" />
-          Beautify
-        </button>
-        {mode === "canvas" && (
+      {size === "sm" ? (
+        <div className="flex flex-col gap-2 px-5 pb-4 pt-3 border-t border-white/5">
+          <div className={`grid ${mode === "canvas" ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
+            <button
+              type="button"
+              onClick={handleClear}
+              title="Kosongkan kotak kode (preview tetap memakai kode terakhir)"
+              className="flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl border border-red-500/30 bg-red-500/5 text-red-300 text-[10.5px] font-black uppercase hover:bg-red-500/15 whitespace-nowrap"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Kosongkan
+            </button>
+            <button
+              type="button"
+              onClick={handleBeautify}
+              disabled={empty}
+              title="Rapikan indentasi kode"
+              className="flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/5 text-amber-300 text-[10.5px] font-black uppercase hover:bg-amber-500/15 disabled:opacity-40 whitespace-nowrap"
+            >
+              <Wand2 className="w-3.5 h-3.5" />
+              Beautify
+            </button>
+            {mode === "canvas" && (
+              <button
+                type="button"
+                onClick={handleMakeTransparent}
+                disabled={empty}
+                title="Ubah background fillRect solid menjadi ctx.clearRect (100% transparan)"
+                className="flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[10.5px] font-black uppercase hover:bg-emerald-500/20 disabled:opacity-40 whitespace-nowrap"
+              >
+                <Grid2X2 className="w-3.5 h-3.5" />
+                Hapus BG
+              </button>
+            )}
+          </div>
           <button
             type="button"
-            onClick={handleMakeTransparent}
+            onClick={() => apply(draft, "render")}
             disabled={empty}
-            title="Ubah background fillRect solid menjadi ctx.clearRect (100% transparan)"
-            className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[11px] font-black uppercase hover:bg-emerald-500/20 disabled:opacity-40"
+            title="Jalankan kode di Live Viewport Monitor (Ctrl+Enter)"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase shadow-lg shadow-indigo-950/40 disabled:opacity-40 whitespace-nowrap"
           >
-            <Grid2X2 className="w-3.5 h-3.5" />
-            Hapus BG
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Render Preview (Ctrl+Enter)
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => apply(draft, "render")}
-          disabled={empty}
-          title="Jalankan kode di Live Viewport Monitor (Ctrl+Enter)"
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase disabled:opacity-40"
-        >
-          <Play className="w-3.5 h-3.5 fill-current" />
-          Render Preview
-        </button>
-      </div>
+        </div>
+      ) : (
+        <div className={`grid ${mode === "canvas" ? "grid-cols-[auto_auto_auto_1fr]" : "grid-cols-[auto_auto_1fr]"} gap-2 px-5 pb-4 pt-3 border-t border-white/5`}>
+          <button
+            type="button"
+            onClick={handleClear}
+            title="Kosongkan kotak kode (preview tetap memakai kode terakhir)"
+            className="flex items-center gap-1.5 px-3.5 py-3 rounded-xl border border-red-500/30 bg-red-500/5 text-red-300 text-[11px] font-black uppercase hover:bg-red-500/15 whitespace-nowrap"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Kosongkan
+          </button>
+          <button
+            type="button"
+            onClick={handleBeautify}
+            disabled={empty}
+            title="Rapikan indentasi kode"
+            className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-amber-500/40 bg-amber-500/5 text-amber-300 text-[11px] font-black uppercase hover:bg-amber-500/15 disabled:opacity-40 whitespace-nowrap"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Beautify
+          </button>
+          {mode === "canvas" && (
+            <button
+              type="button"
+              onClick={handleMakeTransparent}
+              disabled={empty}
+              title="Ubah background fillRect solid menjadi ctx.clearRect (100% transparan)"
+              className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[11px] font-black uppercase hover:bg-emerald-500/20 disabled:opacity-40 whitespace-nowrap"
+            >
+              <Grid2X2 className="w-3.5 h-3.5" />
+              Hapus BG
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => apply(draft, "render")}
+            disabled={empty}
+            title="Jalankan kode di Live Viewport Monitor (Ctrl+Enter)"
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase disabled:opacity-40 whitespace-nowrap"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Render Preview
+          </button>
+        </div>
+      )}
     </div>
   );
 }
